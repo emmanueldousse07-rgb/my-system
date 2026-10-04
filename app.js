@@ -223,7 +223,7 @@ function applyUpdate(){if(!updateWorker){location.reload();return}reloadOnContro
 document.getElementById("msg").addEventListener("keydown",e=>{if(e.key==="Enter")send()});
 bubble("Je suis le centre de contrôle de MY SYSTEM. Dis-moi où tu en es vraiment : je peux t’aider à choisir la prochaine action et, quand l’IA est connectée, agir directement sur ton planning.","coach");
 renderAll();setupUpdates();setInterval(()=>{renderClock();renderHome()},30000);
-setTimeout(()=>{try{window.webkit?.messageHandlers?.mySystemReady?.postMessage("ready")}catch(e){}},500);
+setTimeout(()=>{try{syncNativeWidget();window.webkit?.messageHandlers?.mySystemReady?.postMessage("ready")}catch(e){}},500);
 /* MY SYSTEM adaptive core */
 (function(){
 const today=()=>new Date().toISOString().slice(0,10), valid=t=>/^([01]\d|2[0-3]):[0-5]\d$/.test(t||""), mins=t=>valid(t)?Number(t.slice(0,2))*60+Number(t.slice(3)):null, esc2=s=>String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
