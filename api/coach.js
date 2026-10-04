@@ -137,25 +137,41 @@ ${JSON.stringify(tasks)}`;
 
     const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("") || "";
     let parsed;
+    const cleaned = text
+      .replace(/^\s*\`\`\`(?:json)?\s*/i, "")
+      .replace(/\s*\`\`\`\s*$/i, "")
+      .trim();
+
     try {
-      parsed = JSON.parse(text);
+      parsed = JSON.parse(cleaned);
+      // Some Gemini responses are JSON encoded twice.
+      if (typeof parsed === "string") {
+        try { parsed = JSON.parse(parsed); } catch {}
+      }
     } catch {
-      // Gemini can occasionally wrap otherwise-valid JSON in markdown or extra text.
-      const cleaned = text.replace(/^\s*```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
-      try {
-        parsed = JSON.parse(cleaned);
-      } catch {
-        const start = cleaned.indexOf("{");
-        const end = cleaned.lastIndexOf("}");
-        if (start >= 0 && end > start) {
-          try { parsed = JSON.parse(cleaned.slice(start, end + 1)); }
-          catch { parsed = null; }
+      // Recover a JSON object even if Gemini added surrounding text or truncated the object.
+      const start = cleaned.indexOf("{");
+      const end = cleaned.lastIndexOf("}");
+      if (start >= 0 && end > start) {
+        try { parsed = JSON.parse(cleaned.slice(start, end + 1)); }
+        catch { parsed = null; }
+      }
+
+      // Last resort: recover only the reply field from malformed/truncated JSON.
+      if (!parsed) {
+        const match = cleaned.match(/"reply"\s*:\s*"((?:\\.|[^"\\])*)"/s);
+        if (match) {
+          try {
+            parsed = { reply: JSON.parse("\"" + match[1] + "\""), actions: [] };
+          } catch {
+            parsed = { reply: match[1], actions: [] };
+          }
         }
-        if (!parsed) {
-          // If structured output fails, keep the Coach usable with Gemini's plain-text answer.
-          const fallbackReply = cleaned || text || "Je n'ai pas réussi à répondre.";
-          return res.status(200).json({ reply: fallbackReply, actions: [], response_id: null });
-        }
+      }
+
+      if (!parsed) {
+        const fallbackReply = cleaned || text || "Je n'ai pas réussi à répondre.";
+        return res.status(200).json({ reply: fallbackReply, actions: [], response_id: null });
       }
     }
 
