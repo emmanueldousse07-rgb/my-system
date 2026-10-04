@@ -280,3 +280,157 @@ bubble("Je suis ton centre de contrôle. Dis-moi ce qui se passe vraiment, et je
 document.getElementById("coachContext").textContent=coachContextText();
 renderAll();
 if("serviceWorker" in navigator&&location.protocol!=="file:")navigator.serviceWorker.register("./sw.js").catch(()=>{});
+
+
+/* MY SYSTEM adaptive layer */
+state.overrides=state.overrides||{};
+state.history=Array.isArray(state.history)?state.history:[];
+state.coachLog=Array.isArray(state.coachLog)?state.coachLog:[];
+
+function tasks(){
+  return defaults.concat(state.custom||[]).map(t=>({
+    ...t,
+    time:(state.overrides[t.id]&&state.overrides[t.id].time)||t.time,
+    name:(state.overrides[t.id]&&state.overrides[t.id].name)||t.name,
+    desc:(state.overrides[t.id]&&state.overrides[t.id].desc)||t.desc,
+    xp:state.overrides[t.id]&&Number.isFinite(state.overrides[t.id].xp)?state.overrides[t.id].xp:t.xp
+  }));
+}
+function taskStatus(t){
+  if(state.done.includes(t.id))return "done";
+  const tm=parseTime(t.time); if(tm===null)return "neutral";
+  const delta=tm-currentMinutes();
+  if(delta<0)return "late";
+  if(delta<=45)return "now";
+  return "next";
+}
+function scheduleState(){
+  const q=smartNextTask();
+  if(!q)return {label:"SOCLE TERMINÉ",tone:"good",detail:"Tu es libre de choisir la suite."};
+  const tm=parseTime(q.time);
+  if(tm===null)return {label:"FLEXIBLE",tone:"neutral",detail:"Cette quête s’adapte à ton moment."};
+  const delta=tm-currentMinutes();
+  if(delta<0)return {label:"EN RETARD",tone:"late",detail:"Le système recale la priorité à partir de maintenant."};
+  if(delta<=45)return {label:"MAINTENANT",tone:"now",detail:"Tu arrives dans la fenêtre de cette quête."};
+  return {label:"DANS LES TEMPS",tone:"good",detail:"Tu as encore du temps avant la prochaine étape."};
+}
+function renderClock(){
+  const timeEl=document.getElementById("clockTime"),dateEl=document.getElementById("clockDate"),statusEl=document.getElementById("clockStatus"),line=document.getElementById("clockLine"),timeline=document.getElementById("timeline");
+  if(!timeEl)return;
+  const nowMin=currentMinutes();
+  timeEl.textContent=fmtTime(nowMin);
+  dateEl.textContent=new Intl.DateTimeFormat("fr-CH",{weekday:"long",day:"numeric",month:"long"}).format(new Date());
+  const ss=scheduleState();
+  statusEl.textContent=ss.label; statusEl.className="clock-status "+ss.tone;
+  const dayStart=420,dayEnd=1440,ratio=Math.max(0,Math.min(1,(nowMin-dayStart)/(dayEnd-dayStart)));
+  line.style.left=(ratio*100)+"%";
+  timeline.innerHTML=tasks().map(t=>{
+    const tm=parseTime(t.time); if(tm===null)return "";
+    const pos=Math.max(0,Math.min(100,(tm-dayStart)/(dayEnd-dayStart)*100));
+    return '<button class="timeline-item '+taskStatus(t)+'" style="left:'+pos+'%" onclick="focusTask(\''+t.id+'\')"><span>'+t.time+'</span><i></i><b>'+t.name+'</b></button>';
+  }).join("");
+}
+function focusTask(id){
+  const q=tasks().find(x=>x.id===id); if(!q)return;
+  const el=document.getElementById("clockFocus"); if(!el)return;
+  el.innerHTML="<b>"+q.time+" · "+q.name+"</b><span>"+q.cat+" · +"+q.xp+" XP</span>";
+  el.classList.add("show"); setTimeout(()=>el.classList.remove("show"),2600);
+}
+function renderHome(){
+  const q=smartNextTask(),box=document.getElementById("currentQuest"),explore=document.getElementById("explore"),context=document.getElementById("dayContext"),ss=scheduleState();
+  document.getElementById("streak").textContent="🔥 "+getStreak()+" jour"+(getStreak()>1?"s":"");
+  document.getElementById("xpProgress").textContent=levelPct()+" / 100 XP";
+  const badge=document.getElementById("scheduleBadge");
+  if(badge){badge.textContent=ss.label;badge.className="schedule-badge "+ss.tone}
+  const detail=document.getElementById("scheduleDetail"); if(detail)detail.textContent=ss.detail;
+  if(q){
+    const late=taskStatus(q)==="late";
+    box.innerHTML='<div class="quest-hero"><div class="quest-kicker"><span>'+q.cat.toUpperCase()+'</span><span>'+q.time+'</span></div><div class="quest-title">'+q.name+'</div><div class="quest-desc">'+q.desc+'</div><div class="quest-foot"><span class="xp">+'+q.xp+' XP</span><button class="primary" onclick="completeTask(\''+q.id+'\')">✓ C’est fait</button></div></div>';
+    explore.innerHTML="";
+    context.innerHTML='<div class="day-context '+(late?"late":"")+'"><b>'+(late?"Tu es hors timing, mais le système ne te punit pas.":"Le système garde le cap.")+'</b> '+(late?"On prend cette action comme nouveau point de départ.":"Une seule action maintenant. La suite sera recalculée après.")+'</div>';
+    document.getElementById("heroText").textContent=late?"Le planning est en retard. Pas besoin de tout rattraper : on repart de maintenant.":"Le système regarde l’heure, ton état et la prochaine action. Le reste peut attendre.";
+  }else{
+    box.innerHTML='<div class="quest-hero complete"><div class="eyebrow">JOURNÉE COMPLÈTE</div><div class="quest-title">Le socle est terminé.</div><div class="quest-desc">Tu n’as plus de mission obligatoire. Passe en exploration ou profite simplement de ton temps.</div></div>';
+    renderExplore(); context.innerHTML='<div class="day-context"><b>Mode exploration.</b> Tu as terminé les engagements du jour.</div>';
+    document.getElementById("heroText").textContent="Le socle est fait. Maintenant, choisis ce qui a du sens pour toi.";
+  }
+}
+function renderQuests(){
+  const all=tasks(),next=smartNextTask();
+  document.getElementById("questDone").textContent=state.done.length;
+  document.getElementById("questLeft").textContent=all.length-state.done.length;
+  document.getElementById("questXp").textContent=state.xp;
+  document.getElementById("questList").innerHTML=all.map(q=>'<div class="q-row '+(state.done.includes(q.id)?"done ":"")+(next&&next.id===q.id?"next":"")+'"><button class="q-check" onclick="completeTask(\''+q.id+'\')">'+(state.done.includes(q.id)?"✓":"")+'</button><span class="q-time">'+q.time+'</span><span class="q-name">'+q.name+'</span><span class="q-xp">+'+q.xp+'</span><button class="q-edit" onclick="editTask(\''+q.id+'\')">↗</button></div>').join("");
+  document.getElementById("modeToggle").classList.toggle("on",state.mode==="normal");
+}
+function editTask(id){
+  const q=tasks().find(x=>x.id===id); if(!q)return;
+  const time=prompt("Nouvelle heure (HH:MM) :",q.time); if(time===null)return;
+  if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)){toast("Heure invalide");return}
+  state.overrides[id]={...(state.overrides[id]||{}),time:time}; save(); toast("Horaire actualisé");
+}
+function renderSleep(){
+  const p=sleepPrefs(),wake=parseTime(p.wake);
+  const target=p.fatigue>=8?9.5:p.fatigue>=6?9:p.fatigue>=4?8.5:8;
+  const bed=wake-target*60,wind=bed-45;
+  document.getElementById("bedtime").textContent=fmtTime(bed);
+  document.getElementById("sleepTarget").textContent=target+" h";
+  document.getElementById("sleepFatigue").textContent=p.fatigue+"/10";
+  document.getElementById("sleepWake").textContent=p.wake;
+  document.getElementById("sleepWind").textContent=fmtTime(wind);
+  document.getElementById("sleepStatus").textContent=p.fatigue>=8?"fatigue élevée":p.fatigue>=6?"récupération prioritaire":"rythme stable";
+  document.getElementById("sleepReason").textContent=p.fatigue>=8?"Ce soir, protège surtout une vraie période de repos.":p.fatigue>=6?"Ta fatigue est élevée : mieux vaut protéger une nuit suffisante que repousser le coucher.":"Garde surtout une heure de lever assez régulière.";
+  document.getElementById("sleepPlan").innerHTML='<div class="sleep-step"><b>'+fmtTime(wind)+'</b><span>Mode calme</span><small>Lumière plus douce, activités tranquilles, préparer demain.</small></div><div class="sleep-step"><b>'+fmtTime(bed-15)+'</b><span>Fin des écrans stimulants</span><small>Si possible, passer à quelque chose de calme et peu stimulant.</small></div><div class="sleep-step"><b>'+fmtTime(bed)+'</b><span>Au lit</span><small>Objectif : laisser suffisamment de temps au sommeil, sans chercher la perfection.</small></div>';
+  const hs=document.getElementById("homeSleep");
+  if(hs)hs.innerHTML='<div class="mini-sleep"><span class="eyebrow">CE SOIR</span><b>'+fmtTime(bed)+'</b><small>viser '+target+' h · lever '+p.wake+'</small><button class="ghost" onclick="go(\'sleep\')">Ouvrir le sommeil →</button></div>';
+}
+function renderAll(){
+  document.getElementById("level").textContent=lvl();document.getElementById("charLevel").textContent=lvl();
+  document.getElementById("todayLabel").textContent=localDate().toUpperCase();document.getElementById("todayXp").textContent=state.xp;
+  document.getElementById("todayPct").textContent=pct()+"%";document.getElementById("energy").textContent=state.energy;document.getElementById("mood").textContent=state.mood;
+  document.getElementById("levelProgressText").textContent=levelPct()+"%";document.getElementById("levelProgressBar").style.width=levelPct()+"%";
+  renderHome();renderClock();renderQuests();renderStats();renderNutrition();renderReport();renderSleep();
+}
+function applyCoachActions(actions){
+  if(!Array.isArray(actions))return [];
+  const changed=[];
+  actions.forEach(a=>{
+    if(a.type==="move_task"&&a.task_id&&/^([01]\d|2[0-3]):[0-5]\d$/.test(a.time||"")){
+      state.overrides[a.task_id]={...(state.overrides[a.task_id]||{}),time:a.time};changed.push("horaire "+a.task_id+" → "+a.time);
+    }else if(a.type==="change_task"&&a.task_id){
+      state.overrides[a.task_id]={...(state.overrides[a.task_id]||{}),...(a.name?{name:a.name}:{}),...(a.desc?{desc:a.desc}:{}),...(Number.isFinite(a.xp)?{xp:Math.max(1,Math.min(100,a.xp))}:{})};changed.push("quête "+a.task_id+" modifiée");
+    }else if(a.type==="add_task"&&a.name){
+      state.custom.push({id:"ai-"+Date.now()+Math.random().toString(16).slice(2),time:/^([01]\d|2[0-3]):[0-5]\d$/.test(a.time||"")?a.time:fmtTime(currentMinutes()+30),name:a.name,cat:a.cat||"IA",desc:a.desc||"Une action proposée par le Coach.",xp:Number(a.xp)||10,stat:a.stat||"discipline"});changed.push("nouvelle quête : "+a.name);
+    }else if(a.type==="remove_task"&&a.task_id){state.custom=state.custom.filter(t=>t.id!==a.task_id);delete state.overrides[a.task_id];changed.push("quête supprimée");
+    }else if(a.type==="set_mode"&&(a.mode==="normal"||a.mode==="light")){state.mode=a.mode;changed.push("mode "+a.mode)}
+  });
+  if(changed.length)save(); return changed;
+}
+async function send(){
+  const input=document.getElementById("msg"),m=input.value.trim();if(!m)return;
+  bubble(m,"me");input.value="";bubble(localCoach(m),"coach");
+  document.getElementById("coachState").textContent="Réflexion sur ton contexte…";
+  try{
+    const r=await fetch("/api/coach",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:m,state,context:coachContextText(),tasks:tasks()})});
+    if(r.ok){
+      const d=await r.json(),last=document.querySelector("#chat .coach:last-child");
+      if(last&&d.reply)last.textContent=d.reply;
+      const changed=applyCoachActions(d.actions||[]);
+      if(changed.length)bubble("⚙ Système ajusté : "+changed.join(" · "),"coach");
+      document.getElementById("coachState").textContent="IA connectée · système pilotable";
+    }else document.getElementById("coachState").textContent="Mode local";
+  }catch(e){document.getElementById("coachState").textContent="Mode local · serveur non connecté"}
+}
+function localCoach(m){
+  const low=m.toLowerCase(),tm=low.match(/(?:à|vers|pour)\s*(\d{1,2})[:h](\d{2})/);
+  if((low.includes("déplace")||low.includes("décale")||low.includes("avance")||low.includes("repousse"))&&tm){
+    const q=tasks().find(t=>low.includes(t.id)||low.includes(t.name.toLowerCase().split(" ")[0]));
+    if(q){const time=tm[1].padStart(2,"0")+":"+tm[2];state.overrides[q.id]={...(state.overrides[q.id]||{}),time};save();return "C’est déplacé. « "+q.name+" » passe à "+time+" et l’horloge est recalculée."}
+  }
+  if(low.includes("maintenant")||low.includes("quoi faire")){const q=smartNextTask();return q?"Fais seulement « "+q.name+" ». "+q.desc:"Ton socle est terminé. Choisis une activité qui te fait réellement envie."}
+  if(low.includes("organis"))return "Je regarde l’heure, les quêtes restantes et ton état. La prochaine priorité est « "+(smartNextTask()?.name||"une activité choisie")+" ».";
+  if(low.includes("fatigu")||low.includes("dormi"))return "Si tu es fatigué, passe en mode léger. On réduit l’ambition et on protège les bases : repas, mouvement raisonnable, travail essentiel et récupération.";
+  return "Je garde ce que tu viens de me dire comme contexte. En mode local, je peux déjà recalculer la prochaine action et certains horaires ; avec le serveur IA, le Coach pourra piloter le planning de façon beaucoup plus fine.";
+}
+setInterval(renderClock,30000);
+renderAll();
