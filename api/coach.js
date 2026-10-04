@@ -104,7 +104,7 @@ ${JSON.stringify(tasks)}`;
       contents: [{ role: "user", parts: [{ text: message.trim() }] }],
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 700,
+        maxOutputTokens: 1000,
         responseMimeType: "application/json",
         responseSchema
       }
@@ -157,21 +157,32 @@ ${JSON.stringify(tasks)}`;
         catch { parsed = null; }
       }
 
-      // Last resort: recover only the reply field from malformed/truncated JSON.
+      // Last resort: recover the reply even when Gemini truncated the JSON before
+      // the closing quote/bracket. Never expose the raw JSON wrapper to the UI.
       if (!parsed) {
-        const match = cleaned.match(/"reply"\s*:\s*"((?:\\.|[^"\\])*)"/s);
+        const match = cleaned.match(/"reply"\s*:\s*"([\\s\\S]*)/);
         if (match) {
-          try {
-            parsed = { reply: JSON.parse("\"" + match[1] + "\""), actions: [] };
-          } catch {
-            parsed = { reply: match[1], actions: [] };
-          }
+          let recovered = match[1]
+            .replace(/"\s*,?\s*"actions"\s*:[\\s\\S]*$/i, "")
+            .replace(/\\n/g, "\n")
+            .replace(/\\r/g, "\r")
+            .replace(/\\t/g, "\t")
+            .replace(/\\\\/g, "\\")
+            .replace(/\\\"/g, "\"");
+          // Remove a trailing quote only when it is clearly the JSON terminator.
+          recovered = recovered.replace(/"\s*}\s*$/s, "").trim();
+          if (recovered) parsed = { reply: recovered, actions: [] };
         }
       }
 
       if (!parsed) {
         const fallbackReply = cleaned || text || "Je n'ai pas réussi à répondre.";
-        return res.status(200).json({ reply: fallbackReply, actions: [], response_id: null });
+        const safeReply = fallbackReply
+          .replace(/^\s*\{\s*"reply"\s*:\s*"/i, "")
+          .replace(/"\s*,\s*"actions"[\\s\\S]*$/i, "")
+          .replace(/"\s*}\s*$/s, "")
+          .trim();
+        return res.status(200).json({ reply: safeReply || "Je n'ai pas réussi à répondre.", actions: [], response_id: null });
       }
     }
 
