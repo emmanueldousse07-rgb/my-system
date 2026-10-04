@@ -64,6 +64,26 @@
   <div class="panel insight"><span class="eyebrow">LECTURE DU COACH</span><p id="statInsight">Ta progression se construit par petites actions répétées. Le système privilégie la régularité plutôt que la perfection.</p></div>
 </section>
 
+<section id="sleep" class="screen">
+  <div class="page-head"><span class="eyebrow">RÉCUPÉRATION</span><h1>Sommeil</h1><p>Le système ajuste ton heure de coucher selon ton heure de lever, ta fatigue et ta régularité.</p></div>
+  <div class="sleep-hero">
+    <div class="sleep-kicker"><span>CE SOIR</span><span id="sleepStatus">Analyse en cours</span></div>
+    <div class="sleep-time" id="bedtime">23:00</div>
+    <h2>Commence à ralentir vers cette heure.</h2>
+    <p id="sleepReason">Pour viser suffisamment de sommeil, le système regarde d’abord ton heure de lever et ton niveau de fatigue.</p>
+    <button class="primary" onclick="openSleepSettings()">Ajuster mon rythme</button>
+  </div>
+  <div class="sleep-grid">
+    <div class="sleep-stat"><span>☾</span><b id="sleepTarget">9 h</b><small>objectif de sommeil</small></div>
+    <div class="sleep-stat"><span>◒</span><b id="sleepFatigue">7/10</b><small>fatigue déclarée</small></div>
+    <div class="sleep-stat"><span>↗</span><b id="sleepWake">08:00</b><small>lever cible</small></div>
+    <div class="sleep-stat"><span>⌁</span><b id="sleepWind">22:15</b><small>début du calme</small></div>
+  </div>
+  <div class="section-head"><div><span class="eyebrow">RYTHME</span><h2>Ta soirée</h2></div></div>
+  <div class="panel sleep-plan" id="sleepPlan"></div>
+  <div class="panel sleep-note"><span class="eyebrow">IMPORTANT</span><p>Les cycles de sommeil ne durent pas exactement 90 minutes et varient d’une nuit à l’autre. Le système ne va donc pas essayer de te réveiller à la minute près sur un « cycle parfait ». Il privilégie une durée suffisante, une heure de lever assez régulière et une descente progressive le soir.</p></div>
+</section>
+
 <section id="nutrition" class="screen">
   <div class="page-head"><span class="eyebrow">NOURRITURE</span><h1>Bien manger.</h1><p>Des repas simples et équilibrés pour soutenir ta journée, sans obsession des chiffres.</p></div>
   <div class="meal-now"><span class="eyebrow">MAINTENANT</span><h2 id="mealNowTitle">Petit-déjeuner</h2><p id="mealNowText">Une base avec une source de protéines, un féculent/céréale et un fruit.</p><button class="primary" onclick="shuffleMeal()">Me proposer une idée</button></div>
@@ -99,6 +119,7 @@
   <button data-go="quests" onclick="go('quests')"><span>⚔</span>Quêtes</button>
   <button data-go="coach" onclick="go('coach')"><span>✦</span>Coach</button>
   <button data-go="character" onclick="go('character')"><span>◇</span>Perso</button>
+  <button data-go="sleep" onclick="go('sleep')"><span>☾</span>Sommeil</button>
   <button data-go="nutrition" onclick="go('nutrition')"><span>◌</span>Food</button>
   <button data-go="report" onclick="go('report')"><span>▤</span>Bilan</button>
 </nav>
