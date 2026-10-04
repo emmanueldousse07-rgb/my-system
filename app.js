@@ -123,7 +123,7 @@ async function send(){
         previous_response_id:state.coachResponseId||null
       })
     });
-    if(!r.ok)throw new Error("offline");
+    if(!r.ok){let detail="";try{const err=await r.json();detail=err?.error||""}catch{}throw new Error(detail||("HTTP "+r.status));}
     const d=await r.json();
     placeholder.textContent=d.reply||"Je t’écoute.";
     if(d.response_id)state.coachResponseId=d.response_id;
