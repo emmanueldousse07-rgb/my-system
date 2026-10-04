@@ -1,5 +1,5 @@
-const CACHE="my-system-shell-2026-10-05-11";
-const ASSETS=["./","./index.html","./styles.css","./app.js","./manifest.webmanifest","./icons/icon.svg"];
+const CACHE="my-system-shell-2026-10-05-12";
+const ASSETS=["./","./index.html","./styles.css","./app.js","./manifest.webmanifest?v=2026-10-05","./icons/icon.svg?v=2026-10-05"];
 self.addEventListener("install",event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)))});
 self.addEventListener("message",event=>{if(event.data?.type==="SKIP_WAITING")self.skipWaiting()});
 self.addEventListener("activate",event=>{event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith("my-system-shell-")&&k!==CACHE).map(k=>caches.delete(k)));await self.clients.claim()})())});
