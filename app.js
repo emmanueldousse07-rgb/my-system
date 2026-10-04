@@ -97,6 +97,29 @@ function voiceJournal(){const Speech=window.SpeechRecognition||window.webkitSpee
 function coachContextText(){const q=smartNextTask();return "Heure locale: "+fmtTime(currentMinutes())+" · énergie: "+state.energy+"/10 · humeur: "+state.mood+"/10 · mode: "+state.mode+" · progression: "+pct()+"% · prochaine quête: "+(q?q.time+" "+q.name:"aucune")+" · fatigue sommeil: "+state.sleep.fatigue+"/10"}
 function localCoach(m){const low=m.toLowerCase();const tm=low.match(/(?:à|vers|pour)\s*(\d{1,2})[:h](\d{2})/);if((low.includes("déplace")||low.includes("décale")||low.includes("repousse")||low.includes("avance"))&&tm){const q=tasks().find(t=>low.includes(t.name.toLowerCase()));if(q){const time=tm[1].padStart(2,"0")+":"+tm[2];state.overrides[q.id]={...(state.overrides[q.id]||{}),time};save();renderAll();return"Je l’ai déplacée : « "+q.name+" » passe à "+time+"."}}if(low.includes("maintenant")||low.includes("quoi faire")){const q=smartNextTask();return q?"Fais seulement « "+q.name+" ». "+q.desc:"Ton socle est terminé. Tu es libre."}if(low.includes("organis"))return"Je regarde l’heure, ton énergie et les quêtes restantes. La prochaine priorité est « "+(smartNextTask()?.name||"une activité choisie")+" ».";if(low.includes("fatigu")||low.includes("dormi"))return"On baisse l’intensité. Le but est de protéger les essentiels et ta récupération, pas de tout rattraper.";return"Je garde ça comme contexte. Je peux déjà agir localement sur les quêtes ; avec l’IA connectée, je peux analyser plus finement ta situation."}
 function applyCoachActions(actions){if(!Array.isArray(actions))return[];const changed=[];const all=tasks();actions.forEach(a=>{const q=a.task_id?all.find(t=>t.id===a.task_id):null;const protectedTask=q&&(state.done.includes(q.id)||q.cat==="FIXE");if((a.type==="move_task"||a.type==="change_task"||a.type==="remove_task")&&(!q||protectedTask))return;if(a.type==="move_task"&&a.task_id&&/^([01]\d|2[0-3]):[0-5]\d$/.test(a.time||"")){state.overrides[a.task_id]={...(state.overrides[a.task_id]||{}),time:a.time};changed.push("horaire → "+a.time)}else if(a.type==="change_task"&&a.task_id){state.overrides[a.task_id]={...(state.overrides[a.task_id]||{}),...(a.time&&/^([01]\d|2[0-3]):[0-5]\d$/.test(a.time)?{time:a.time}:{}),...(a.name?{name:a.name}:{}),...(a.desc?{desc:a.desc}:{}),...(Number.isFinite(a.xp)?{xp:Math.max(1,Math.min(100,a.xp))}:{})};changed.push(a.time?"quête + horaire modifiés":"quête modifiée")}else if(a.type==="add_task"&&a.name){state.custom.push({id:"ai-"+Date.now()+"-"+Math.random().toString(16).slice(2),time:/^([01]\d|2[0-3]):[0-5]\d$/.test(a.time||"")?a.time:fmtTime(currentMinutes()+30),name:a.name,cat:a.cat||"COACH",desc:a.desc||"Action proposée par le Coach.",xp:Number(a.xp)||10,stat:a.stat||"discipline"});changed.push("nouvelle quête")}else if(a.type==="remove_task"&&a.task_id){state.custom=state.custom.filter(t=>t.id!==a.task_id);delete state.overrides[a.task_id];changed.push("quête supprimée")}else if(a.type==="set_mode"&&(a.mode==="normal"||a.mode==="light")){if(state.mode!==a.mode){state.mode=a.mode;changed.push("mode "+a.mode)}}});if(changed.length)save();return changed}
+function naturalCoachActions(message){
+  const low=String(message||"").toLowerCase();
+  const all=tasks();
+  const out=[];
+  const timeMatch=low.match(/(?:à|vers|pour)\\s*(\\d{1,2})(?:[:h](\\d{2}))?/i);
+  const time=timeMatch?String(Number(timeMatch[1])).padStart(2,"0")+":"+(timeMatch[2]||"00"):"";
+  const sport=all.find(t=>!state.done.includes(t.id)&&t.cat!=="FIXE"&&/sport|bouger|fitness|salle|muscu/i.test(t.name));
+  const work=all.find(t=>!state.done.includes(t.id)&&t.cat!=="FIXE"&&/epfl|travail|étud|cours/i.test(t.name));
+  if(time && sport && /(?:fitness|salle|muscu|musculation|sport|bouger)/i.test(low) &&
+     /(?:demain|aujourd|aujourd'hui|finalement|mets|mettre|passe|déplace|décale|fais|faire|vais)/i.test(low)){
+    out.push({type:"move_task",task_id:sport.id,time});
+  }
+  if(sport && /(?:finalement|plutôt|plutot|préfère|prefere)/i.test(low) &&
+     /(?:courir|course|running)/i.test(low)){
+    out.push({type:"change_task",task_id:sport.id,name:"Course / running",desc:"Courir à l’intensité adaptée à ton énergie du jour."});
+  }
+  if(time && work && /(?:travail|étud|cours|epfl)/i.test(low) &&
+     /(?:mets|mettre|passe|déplace|décale|fais|faire)/i.test(low)){
+    out.push({type:"move_task",task_id:work.id,time});
+  }
+  return out;
+}
+
 async function send(){
   const input=document.getElementById("msg"),m=input.value.trim();
   if(!m||window.__coachBusy)return;
@@ -129,9 +152,15 @@ async function send(){
     if(d.response_id)state.coachResponseId=d.response_id;
     // Always use the protected public action handler so Coach changes are
     // actually applied to the same state used by the Quêtes screen.
+    const modelActions=Array.isArray(d.actions)?d.actions:[];
+    const localActions=naturalCoachActions(m);
+    const mergedActions=[...modelActions];
+    for(const a of localActions){
+      if(!mergedActions.some(x=>x.type===a.type&&x.task_id===a.task_id&&(!a.time||x.time===a.time))) mergedActions.push(a);
+    }
     const changed=typeof window.applyCoachActions==="function"
-      ? window.applyCoachActions(d.actions||[])
-      : applyCoachActions(d.actions||[]);
+      ? window.applyCoachActions(mergedActions)
+      : applyCoachActions(mergedActions);
     if(changed.length){
       bubble("⚙ Système ajusté · "+changed.join(" · "),"coach");
       save();
