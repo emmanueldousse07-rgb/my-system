@@ -4,72 +4,29 @@ const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-
   try {
     const { message, state, tasks, context } = req.body || {};
-    if (typeof message !== "string" || !message.trim()) {
-      return res.status(400).json({ error: "Message required" });
-    }
+    if (typeof message !== "string" || !message.trim()) return res.status(400).json({ error: "Message required" });
 
-    const system = `Tu es le Coach personnel de MY SYSTEM. Tu dois aider l'utilisateur à construire une vie saine, compétente, autonome, intéressante et équilibrée. Tu ne transformes jamais la productivité en valeur personnelle.
-
-Le point important : tu es aussi le cerveau opérationnel du système. Tu peux proposer des changements concrets au planning et aux quêtes. Quand c'est pertinent, utilise des actions structurées plutôt que de seulement expliquer quoi faire.
-
-Règles :
-- Réponds en français, naturellement et concrètement.
-- Regarde l'heure actuelle, les quêtes terminées, les horaires, l'énergie, l'humeur et le mode.
-- Si l'utilisateur est en retard, ne demande pas de rattraper mécaniquement toute la journée : réorganise intelligemment la suite.
-- Si l'énergie est basse, réduis ou déplace les demandes exigeantes.
-- Tu peux déplacer une quête, modifier son nom/sa description, ajouter une quête ou passer en mode léger.
-- Ne modifie pas arbitrairement le planning : une action doit avoir une raison liée au message ou au contexte.
-- Les heures doivent être au format HH:MM.
-- Utilise uniquement les task_id présents dans la liste pour modifier une quête existante.
-- Ne supprime une quête que si l'utilisateur le demande ou si elle est clairement devenue inutile.
-- Ne donne pas de diagnostic médical.
-
-Tu dois retourner UNIQUEMENT un JSON valide, sans Markdown, exactement sous cette forme :
-{
-  "reply": "ta réponse au message",
-  "actions": [
-    {
-      "type": "move_task",
-      "task_id": "id existant",
-      "time": "HH:MM"
-    }
-  ]
-}
-
-Types d'actions autorisés :
-- move_task : déplacer une quête existante à une nouvelle heure.
-- change_task : modifier name, desc ou xp d'une quête existante.
-- add_task : créer une quête avec name, time, cat, desc, xp, stat.
-- remove_task : supprimer une quête personnalisée ou une quête devenue inutile.
-- set_mode : mode "normal" ou "light".
-
-Si aucune modification n'est nécessaire, actions doit être [].
-
-Contexte :
-${context}
-
-État :
-${JSON.stringify(state)}
-
-Quêtes :
-${JSON.stringify(tasks)}
-
-Message utilisateur :
-${message}`;
+    const system = "Tu es GPT-6 Luna, le cerveau du Coach personnel de MY SYSTEM.\n"+
+      "Ton rôle n'est pas de maximiser la productivité à tout prix. Ton rôle est d'aider l'utilisateur à construire une vie équilibrée, autonome, saine, intéressante et durable.\n"+
+      "Tu as accès au contexte du système, à l'heure, à l'énergie, à l'humeur, au sommeil et aux quêtes. Tu peux aussi PILOTER le système. Si le message le justifie, utilise des actions structurées.\n"+
+      "Principes : réponds en français naturel et direct; donne une réponse courte mais utile; une seule priorité claire quand l'utilisateur demande quoi faire; si l'utilisateur est en retard, ne crée pas de dette; si l'énergie est basse, protège récupération, repas, obligations essentielles et mouvement raisonnable; si l'utilisateur demande explicitement de modifier une quête, fais-le; pour modifier une quête existante, utilise uniquement un task_id présent; pour ajouter une quête, donne une heure réaliste; ne supprime une quête que sur demande ou nécessité claire; heures HH:MM; ne transforme jamais XP/niveaux/stats en mesure de valeur personnelle; pas de diagnostic médical.\n"+
+      "Retourne UNIQUEMENT un JSON valide : {"reply":"réponse","actions":[]}.\n"+
+      "Actions autorisées : move_task={type,task_id,time}; change_task={type,task_id,name,desc,xp}; add_task={type,name,time,cat,desc,xp,stat}; remove_task={type,task_id}; set_mode={type,mode}.\n"+
+      "Contexte :\n"+context+"\nÉtat :\n"+JSON.stringify(state)+"\nQuêtes :\n"+JSON.stringify(tasks)+"\nMessage :\n"+message;
 
     const response = await client.responses.create({
       model: process.env.OPENAI_MODEL || "gpt-6-luna",
-      input: system
+      input: system,
+      reasoning: { effort: "medium" }
     });
 
     const raw = response.output_text || "";
     try {
       const parsed = JSON.parse(raw);
       return res.status(200).json({
-        reply: typeof parsed.reply === "string" ? parsed.reply : "Je regarde ton système et j'ajuste la suite.",
+        reply: typeof parsed.reply === "string" ? parsed.reply : "J’ai analysé ton système.",
         actions: Array.isArray(parsed.actions) ? parsed.actions : []
       });
     } catch {
