@@ -42,6 +42,7 @@
   <div id="dayContext"></div>
 
   <div class="section-head"><div><span class="eyebrow">TON ÉTAT</span><h2>Comment tu fonctionnes aujourd’hui</h2></div></div>
+  <div class="day-brief" id="dayBrief"><div class="brief-icon">✦</div><div><span class="eyebrow">LECTURE DU SYSTÈME</span><b id="dayBriefTitle">Ta journée se construit à partir de maintenant.</b><p id="dayBriefText">Le système ajuste la suite à ton rythme réel.</p></div><button onclick="go('coach')">DÉTAILS</button></div>
   <div class="state-grid">
     <button class="state-card" onclick="adjustEnergy()"><span>⚡</span><b id="energy">7</b><small>énergie</small></button>
     <button class="state-card" onclick="adjustMood()"><span>◒</span><b id="mood">7</b><small>humeur</small></button>
@@ -52,6 +53,18 @@
   <div id="homeSleep"></div>
   <div class="section-head"><div><span class="eyebrow">APERÇU</span><h2>Progression</h2></div><button class="ghost" onclick="go('report')">Bilan →</button></div>
   <div class="progress-card"><div class="progress-row"><div><b id="todayXp">0 XP</b><small>gagnés aujourd’hui</small></div><div class="level-mini">LVL <b id="homeLevel">1</b></div></div><div class="progress"><i id="homeXpBar"></i></div><div class="progress-meta"><span id="questProgressText">0 / 0 missions</span><span id="homeNextText">Prêt</span></div></div>
+  <div class="character-hud">
+    <div class="hud-head"><div><span class="eyebrow">CORE</span><b>TON PERSONNAGE</b></div><button class="hud-edit" onclick="customizeAvatar()">PERSONNALISER</button></div>
+    <div class="avatar-stage">
+      <div class="stat-orbit orbit-health"><span>♥</span><b id="hudHealth">28</b><small>SANTÉ</small></div>
+      <div class="stat-orbit orbit-mind"><span>◒</span><b id="hudMind">34</b><small>MENTAL</small></div>
+      <div class="stat-orbit orbit-body"><span>◆</span><b id="hudBody">24</b><small>PHYSIQUE</small></div>
+      <div class="stat-orbit orbit-knowledge"><span>✦</span><b id="hudKnowledge">31</b><small>CONNAISS.</small></div>
+      <div class="avatar-figure" id="homeAvatar"><div class="avatar-aura"></div><div class="avatar-head"></div><div class="avatar-neck"></div><div class="avatar-body"></div><div class="avatar-leg left"></div><div class="avatar-leg right"></div><div class="avatar-core">M</div></div>
+      <div class="avatar-level"><span>RANK</span><b id="hudRank">E</b><small>LVL <i id="hudLevel">1</i></small></div>
+    </div>
+    <div class="hud-footer"><span id="hudEvolution">Évolution stable</span><span id="hudNextStat">+0 XP pour progresser</span></div>
+  </div>
 
   <div class="section-head"><div><span class="eyebrow">ACCÈS RAPIDE</span><h2>Ton système</h2></div></div>
   <div class="quick-grid">
@@ -82,7 +95,10 @@
 
 <section id="character" class="screen">
   <div class="page-head"><span class="eyebrow">PERSONNAGE</span><h1>Ton évolution</h1><p>Les stats décrivent tes habitudes. Elles ne définissent jamais ta valeur.</p></div>
-  <div class="character-card"><div class="avatar"><div class="avatar-symbol">M</div><span>USER</span><em>LVL <b id="charLevel">1</b></em></div><div><span class="eyebrow">ARC ACTUEL</span><h2>RECONSTRUCTION</h2><p>Construire une base solide avant d’augmenter la difficulté.</p></div></div>
+  <div class="character-showcase">
+  <div class="showcase-copy"><span class="eyebrow">SYSTEM IDENTITY</span><h2 id="charArcTitle">RECONSTRUCTION</h2><p id="charArcText">Ton personnage évolue à partir de ce que tu fais réellement.</p><button class="primary" onclick="customizeAvatar()">Modifier l’avatar</button></div>
+  <div class="showcase-avatar"><div class="avatar-figure large" id="characterAvatar"><div class="avatar-aura"></div><div class="avatar-head"></div><div class="avatar-neck"></div><div class="avatar-body"></div><div class="avatar-leg left"></div><div class="avatar-leg right"></div><div class="avatar-core">M</div></div><div class="showcase-rank"><span>RANK</span><b id="charRank">E</b><small>LVL <i id="charLevel">1</i></small></div></div>
+</div>
   <div class="level-progress"><div><b>Prochain niveau</b><span id="levelProgressText">0%</span></div><div class="progress"><i id="levelProgressBar"></i></div></div>
   <div class="section-head"><div><span class="eyebrow">ATTRIBUTS</span><h2>Caractéristiques</h2></div></div>
   <div id="stats"></div>
