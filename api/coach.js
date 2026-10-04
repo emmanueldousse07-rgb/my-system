@@ -140,7 +140,22 @@ ${JSON.stringify(tasks)}`;
     try {
       parsed = JSON.parse(text);
     } catch {
-      return res.status(502).json({ error: "Gemini returned invalid JSON" });
+      // Gemini can occasionally wrap otherwise-valid JSON in markdown or extra text.
+      const cleaned = text.replace(/^\s*```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch {
+        const start = cleaned.indexOf("{");
+        const end = cleaned.lastIndexOf("}");
+        if (start >= 0 && end > start) {
+          try { parsed = JSON.parse(cleaned.slice(start, end + 1)); }
+          catch { parsed = null; }
+        }
+        if (!parsed) {
+          console.error("Gemini invalid JSON:", text);
+          return res.status(502).json({ error: "Gemini returned invalid JSON" });
+        }
+      }
     }
 
     return res.status(200).json({
