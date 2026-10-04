@@ -1,25 +1,31 @@
-import OpenAI from "openai";
-
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 const actionSchema = {
   type: "array",
   items: {
     type: "object",
     properties: {
       type: { type: "string", enum: ["move_task","change_task","add_task","remove_task","set_mode"] },
-      task_id: { type: ["string","null"] },
-      time: { type: ["string","null"] },
-      name: { type: ["string","null"] },
-      desc: { type: ["string","null"] },
-      xp: { type: ["number","null"] },
-      cat: { type: ["string","null"] },
-      stat: { type: ["string","null"] },
-      mode: { type: ["string","null"] }
+      task_id: { type: "string" },
+      time: { type: "string" },
+      name: { type: "string" },
+      desc: { type: "string" },
+      xp: { type: "number" },
+      cat: { type: "string" },
+      stat: { type: "string" },
+      mode: { type: "string" }
     },
     required: ["type","task_id","time","name","desc","xp","cat","stat","mode"],
     additionalProperties: false
   }
+};
+
+const responseSchema = {
+  type: "object",
+  properties: {
+    reply: { type: "string" },
+    actions: actionSchema
+  },
+  required: ["reply","actions"],
+  additionalProperties: false
 };
 
 export default async function handler(req, res) {
@@ -30,12 +36,16 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const { message, state, tasks, context, previous_response_id } = req.body || {};
+    const { message, state, tasks, context } = req.body || {};
     if (typeof message !== "string" || !message.trim()) {
       return res.status(400).json({ error: "Message required" });
     }
 
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) return res.status(500).json({ error: "GEMINI_API_KEY is missing in Vercel Production" });
+
     const instructions = `Tu es le véritable Coach IA personnel intégré à MY SYSTEM.
+
 Tu dois parler comme un excellent assistant personnel humain : naturel, direct, chaleureux, intelligent et concret. Tu peux être familier en français quand l'utilisateur l'est ("frérot", "mec"), sans forcer.
 
 TON RÔLE
@@ -43,7 +53,7 @@ Tu aides l'utilisateur à décider, comprendre, organiser et avancer. Tu n'es PA
 
 STYLE
 - Réponds en français naturel.
-- Pas de langage robotique, pas de phrases génériques du type "je garde ça comme contexte".
+- Pas de langage robotique ni de phrases génériques.
 - Ne répète pas inutilement les informations que l'utilisateur vient de donner.
 - Pour une question simple : réponse simple.
 - Pour une situation complexe : analyse courte puis recommandation claire.
@@ -54,7 +64,7 @@ STYLE
 - Ne prétends jamais avoir effectué une action si aucune action système n'est renvoyée.
 
 MY SYSTEM
-Tu as accès à l'état actuel de l'application, aux quêtes et à quelques éléments de contexte. Utilise-les réellement.
+Tu as accès à l'état actuel de l'application, aux quêtes et au contexte. Utilise-les réellement.
 Tu peux piloter le système avec des actions structurées.
 Une action n'est produite que si elle est utile et justifiée par le message.
 Respecte les contraintes FIXE : ne les déplace/supprime jamais automatiquement.
@@ -71,12 +81,12 @@ ACTIONS
 - set_mode : "normal" ou "light".
 Pour task_id, utilise uniquement un id réellement présent dans les quêtes fournies.
 Pour une nouvelle quête, choisis une heure réaliste en HH:MM.
+Pour les champs d'action qui ne servent pas, renvoie une chaîne vide "".
 Pour les actions inutiles, renvoie [].
 
-FORMAT
-Retourne uniquement un objet JSON conforme au schéma demandé, avec :
-reply = ta vraie réponse à l'utilisateur
-actions = les éventuelles actions système.
+IMPORTANT
+Le contexte et l'état peuvent contenir l'historique récent du Coach. Utilise-le pour garder une continuité naturelle.
+Ne parle jamais de "tokens", de modèle ou d'API à l'utilisateur sauf s'il le demande.
 
 CONTEXTE ACTUEL
 ${context}
@@ -87,46 +97,46 @@ ${JSON.stringify(state)}
 QUÊTES ACTUELLES
 ${JSON.stringify(tasks)}`;
 
-    const response = await client.responses.create({
-      model: process.env.OPENAI_MODEL || "gpt-6-luna",
-      instructions,
-      input: message.trim(),
-      previous_response_id: typeof previous_response_id === "string" && previous_response_id ? previous_response_id : undefined,
-      reasoning: { effort: "low" },
-      text: {
-        format: {
-          type: "json_schema",
-          name: "my_system_coach",
-          strict: true,
-          schema: {
-            type: "object",
-            properties: {
-              reply: { type: "string" },
-              actions: actionSchema
-            },
-            required: ["reply","actions"],
-            additionalProperties: false
+    const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: instructions }] },
+          contents: [{ role: "user", parts: [{ text: message.trim() }] }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 700,
+            responseMimeType: "application/json",
+            responseSchema
           }
-        },
-        verbosity: "low"
-      },
-      max_output_tokens: 700
-    });
+        })
+      }
+    );
 
+    const data = await response.json();
+    if (!response.ok) {
+      const detail = data?.error?.message || `Gemini HTTP ${response.status}`;
+      return res.status(response.status >= 500 ? 502 : response.status).json({ error: detail });
+    }
+
+    const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("") || "";
     let parsed;
     try {
-      parsed = JSON.parse(response.output_text || "{}");
+      parsed = JSON.parse(text);
     } catch {
-      parsed = { reply: response.output_text || "Je n’ai pas réussi à formuler ma réponse.", actions: [] };
+      return res.status(502).json({ error: "Gemini returned invalid JSON" });
     }
 
     return res.status(200).json({
-      reply: typeof parsed.reply === "string" ? parsed.reply : "Je t’écoute.",
+      reply: typeof parsed.reply === "string" ? parsed.reply : "Je t'écoute.",
       actions: Array.isArray(parsed.actions) ? parsed.actions : [],
-      response_id: response.id || null
+      response_id: null
     });
   } catch (error) {
-    console.error("MY SYSTEM Coach:", error);
-    return res.status(500).json({ error: error?.message || "Coach unavailable" });
+    console.error("MY SYSTEM Gemini Coach:", error);
+    return res.status(500).json({ error: error?.message || "Gemini Coach unavailable" });
   }
 }
