@@ -14,17 +14,17 @@ const defaults=[
 {id:"tomorrow",time:"22:30",name:"Préparer demain",cat:"ORGANISATION",desc:"Choisir une priorité et rendre demain plus facile.",xp:12,stat:"discipline"},
 {id:"calm",time:"23:00",name:"Mode calme",cat:"RÉCUPÉRATION",desc:"Ralentir progressivement et protéger ta nuit.",xp:15,stat:"recovery"}
 ];
-const freshState=()=>({xp:0,done:[],mode:"normal",energy:7,mood:7,stats:{health:28,fitness:24,knowledge:31,discipline:27,social:23,mood:34,recovery:29,energy:36},pantry:["œufs","riz","fruits","yaourt"],journal:"",custom:[],overrides:{},sleep:{wake:"08:00",fatigue:7,usual:"23:00"},history:[],coachLog:[],coachResponseId:null,avatar:{style:"neon",hair:"short",accent:"violet"}});
+const freshState=()=>({xp:0,done:[],mode:"normal",energy:7,mood:7,stats:{health:28,fitness:24,knowledge:31,discipline:27,social:23,mood:34,recovery:29,energy:36},pantry:["œufs","riz","fruits","yaourt"],journal:"",custom:[],removed:[],overrides:{},sleep:{wake:"08:00",fatigue:7,usual:"23:00"},history:[],coachLog:[],coachResponseId:null,avatar:{style:"neon",hair:"short",accent:"violet"}});
 let state=loadState(), questFilter="all", updateWorker=null, reloadOnController=false;
 
 function loadState(){try{const raw=JSON.parse(localStorage.getItem(KEY)||"null");return raw?merge(freshState(),raw):freshState()}catch(e){return freshState()}}
-function merge(base,raw){return {...base,...raw,stats:{...base.stats,...(raw.stats||{})},sleep:{...base.sleep,...(raw.sleep||{})},custom:Array.isArray(raw.custom)?raw.custom:[],overrides:raw.overrides||{},done:Array.isArray(raw.done)?raw.done:[],history:Array.isArray(raw.history)?raw.history:[],coachLog:Array.isArray(raw.coachLog)?raw.coachLog:[],coachResponseId:typeof raw.coachResponseId==="string"?raw.coachResponseId:null}}
+function merge(base,raw){return {...base,...raw,stats:{...base.stats,...(raw.stats||{})},sleep:{...base.sleep,...(raw.sleep||{})},custom:Array.isArray(raw.custom)?raw.custom:[],overrides:raw.overrides||{},removed:Array.isArray(raw.removed)?raw.removed:[],done:Array.isArray(raw.done)?raw.done:[],history:Array.isArray(raw.history)?raw.history:[],coachLog:Array.isArray(raw.coachLog)?raw.coachLog:[],coachResponseId:typeof raw.coachResponseId==="string"?raw.coachResponseId:null}}
 function save(){localStorage.setItem(KEY,JSON.stringify(state));localStorage.setItem(DAYKEY(),JSON.stringify({done:state.done,xp:state.xp,energy:state.energy,mood:state.mood,at:Date.now()}))}
 function localDate(){return new Intl.DateTimeFormat("fr-CH",{weekday:"long",day:"numeric",month:"long"}).format(new Date())}
 function currentMinutes(){const d=new Date();return d.getHours()*60+d.getMinutes()}
 function parseTime(t){if(!/^\d{2}:\d{2}$/.test(t||""))return null;const [h,m]=t.split(":").map(Number);return h*60+m}
 function fmtTime(m){m=((m%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0")}
-function tasks(){return defaults.concat(state.custom||[]).map(t=>{const o=state.overrides[t.id]||{};return {...t,time:o.time||t.time,name:o.name||t.name,desc:o.desc||t.desc,xp:Number.isFinite(o.xp)?o.xp:t.xp}})}
+function tasks(){return defaults.concat(state.custom||[]).filter(t=>!(state.removed||[]).includes(t.id)).map(t=>{const o=state.overrides[t.id]||{};return {...t,time:o.time||t.time,name:o.name||t.name,desc:o.desc||t.desc,xp:Number.isFinite(o.xp)?o.xp:t.xp}})}
 function taskStatus(t){if(state.done.includes(t.id))return"done";const m=parseTime(t.time);if(m===null)return"neutral";const d=m-currentMinutes();if(d<0)return"late";if(d<=45)return"now";return"next"}
 function smartNextTask(){const all=tasks().filter(t=>!state.done.includes(t.id));if(!all.length)return null;const now=currentMinutes();const future=all.filter(t=>parseTime(t.time)!==null&&parseTime(t.time)>=now);if(future.length)return future.sort((a,b)=>parseTime(a.time)-parseTime(b.time))[0];return all.sort((a,b)=>(parseTime(a.time)||9999)-(parseTime(b.time)||9999))[0]}
 function lvl(){return Math.max(1,Math.floor(state.xp/100)+1)}
@@ -37,7 +37,57 @@ function quick(text){document.getElementById("msg").value=text;send()}
 function completeTask(id){if(state.done.includes(id))return;const q=tasks().find(x=>x.id===id);if(!q)return;state.done.push(id);state.xp+=q.xp;state.stats[q.stat]=Math.min(100,(state.stats[q.stat]||0)+Math.max(1,Math.round(q.xp/8)));state.history.push({date:new Date().toISOString(),type:"complete",task:id,xp:q.xp});save();toast("✦ QUÊTE ACCOMPLIE · +"+q.xp+" XP");renderAll()}
 function toggleMode(){state.mode=state.mode==="normal"?"light":"normal";save();toast(state.mode==="light"?"Mode léger activé":"Mode normal activé");renderAll()}
 function setQuestFilter(f){questFilter=f;document.querySelectorAll(".filter").forEach(b=>b.classList.toggle("active",b.dataset.filter===f));renderQuests()}
-function editTask(id){const q=tasks().find(x=>x.id===id);if(!q)return;const time=prompt("Nouvelle heure (HH:MM)",q.time);if(time===null)return;if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)){toast("Heure invalide");return}state.overrides[id]={...(state.overrides[id]||{}),time};save();toast("Horaire actualisé");renderAll()}
+function editTask(id){
+ const q=tasks().find(x=>x.id===id);if(!q||state.done.includes(id)||q.cat==="FIXE")return;
+ showModal('<div class="time-edit"><span class="eyebrow">MODIFIER LA QUÊTE</span><h3>'+esc(q.name)+'</h3><p class="time-edit-sub">Choisis directement le nouvel horaire.</p><label for="taskTimeInput">Nouvelle heure</label><input id="taskTimeInput" type="time" value="'+esc(q.time)+'" step="300"><div class="time-preview"><span>AVANT</span><b>'+esc(q.time)+'</b><i>→</i><span>APRÈS</span><strong id="taskTimePreview">'+esc(q.time)+'</strong></div><div class="modal-actions"><button class="secondary" onclick="closeModal()">Annuler</button><button class="primary" onclick="saveTaskTime(\''+q.id+'\')">Enregistrer</button></div></div>');
+ const input=document.getElementById("taskTimeInput"),preview=document.getElementById("taskTimePreview");
+ if(input&&preview)input.addEventListener("input",()=>preview.textContent=input.value||q.time);
+ if(input)input.focus();
+}
+function saveTaskTime(id){
+ const q=tasks().find(x=>x.id===id),input=document.getElementById("taskTimeInput"),time=input?.value||"";
+ if(!q||!/^([01]\d|2[0-3]):[0-5]\d$/.test(time))return toast("Choisis une heure valide");
+ state.overrides[id]={...(state.overrides[id]||{}),time};
+ save();closeModal();toast("Horaire → "+time);renderAll();
+}
+function deleteTask(id,source="manual"){
+ const q=tasks().find(x=>x.id===id);if(!q||state.done.includes(id)||q.cat==="FIXE")return false;
+ state.removed=Array.isArray(state.removed)?state.removed:[];
+ if(!state.removed.includes(id))state.removed.push(id);
+ state.custom=state.custom.filter(t=>t.id!==id);
+ delete state.overrides[id];
+ save();toast(source==="swipe"?"Quête supprimée":"Quête supprimée");renderAll();return true;
+}
+function swipeDeleteRow(id,row){
+ const dx=Math.max(0,Number(row.dataset.swipeDx||0));
+ row.style.transform="";
+ row.classList.remove("swiping");
+ row.dataset.swipeDx="0";
+ if(dx>=90){deleteTask(id,"swipe");return true}
+ return false;
+}
+function setupQuestSwipe(){
+ const list=document.getElementById("questList");if(!list||list.dataset.swipeReady)return;
+ list.dataset.swipeReady="1";
+ let startX=0,startY=0,active=null,moved=false;
+ list.addEventListener("pointerdown",e=>{
+   const row=e.target.closest(".q-row");if(!row)return;
+   if(e.target.closest("button"))return;
+   active=row;startX=e.clientX;startY=e.clientY;moved=false;row.classList.add("swiping");
+ });
+ list.addEventListener("pointermove",e=>{
+   if(!active)return;
+   const dx=e.clientX-startX,dy=e.clientY-startY;
+   if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>8){active=null;return}
+   if(dx>4){moved=true;const shift=Math.min(125,dx);active.dataset.swipeDx=String(shift);active.style.transform="translateX("+shift+"px)"}
+ });
+ list.addEventListener("pointerup",()=>{
+   if(!active)return;
+   const row=active;active=null;
+   if(moved)swipeDeleteRow(row.dataset.id,row);else{row.classList.remove("swiping");row.style.transform=""}
+ });
+ list.addEventListener("pointercancel",()=>{if(active){active.classList.remove("swiping");active.style.transform="";active=null}});
+}
 function addCustomQuest(){const name=prompt("Nom de la quête");if(!name?.trim())return;const time=prompt("Heure (HH:MM)",fmtTime(currentMinutes()+30));if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)){toast("Heure invalide");return}state.custom.push({id:"custom-"+Date.now(),time,name:name.trim(),cat:"PERSONNEL",desc:"Une action choisie pour aujourd’hui.",xp:10,stat:"discipline"});save();toast("Nouvelle quête créée");renderAll()}
 function adjustEnergy(){const v=prompt("Énergie actuelle sur 10",String(state.energy));if(v===null)return;const n=Math.max(1,Math.min(10,Number(v)));if(!Number.isFinite(n))return;state.energy=n;save();renderAll()}
 function adjustMood(){const v=prompt("Humeur actuelle sur 10",String(state.mood));if(v===null)return;const n=Math.max(1,Math.min(10,Number(v)));if(!Number.isFinite(n))return;state.mood=n;save();renderAll()}
@@ -96,10 +146,20 @@ function voiceJournal(){const Speech=window.SpeechRecognition||window.webkitSpee
 
 function coachContextText(){const q=smartNextTask();return "Heure locale: "+fmtTime(currentMinutes())+" · énergie: "+state.energy+"/10 · humeur: "+state.mood+"/10 · mode: "+state.mode+" · progression: "+pct()+"% · prochaine quête: "+(q?q.time+" "+q.name:"aucune")+" · fatigue sommeil: "+state.sleep.fatigue+"/10"}
 function localCoach(m){const low=m.toLowerCase();const tm=low.match(/(?:à|vers|pour)\s*(\d{1,2})[:h](\d{2})/);if((low.includes("déplace")||low.includes("décale")||low.includes("repousse")||low.includes("avance"))&&tm){const q=tasks().find(t=>low.includes(t.name.toLowerCase()));if(q){const time=tm[1].padStart(2,"0")+":"+tm[2];state.overrides[q.id]={...(state.overrides[q.id]||{}),time};save();renderAll();return"Je l’ai déplacée : « "+q.name+" » passe à "+time+"."}}if(low.includes("maintenant")||low.includes("quoi faire")){const q=smartNextTask();return q?"Fais seulement « "+q.name+" ». "+q.desc:"Ton socle est terminé. Tu es libre."}if(low.includes("organis"))return"Je regarde l’heure, ton énergie et les quêtes restantes. La prochaine priorité est « "+(smartNextTask()?.name||"une activité choisie")+" ».";if(low.includes("fatigu")||low.includes("dormi"))return"On baisse l’intensité. Le but est de protéger les essentiels et ta récupération, pas de tout rattraper.";return"Je garde ça comme contexte. Je peux déjà agir localement sur les quêtes ; avec l’IA connectée, je peux analyser plus finement ta situation."}
-function applyCoachActions(actions){if(!Array.isArray(actions))return[];const changed=[];const all=tasks();actions.forEach(a=>{const q=a.task_id?all.find(t=>t.id===a.task_id):null;const protectedTask=q&&(state.done.includes(q.id)||q.cat==="FIXE");if((a.type==="move_task"||a.type==="change_task"||a.type==="remove_task")&&(!q||protectedTask))return;if(a.type==="move_task"&&a.task_id&&/^([01]\d|2[0-3]):[0-5]\d$/.test(a.time||"")){state.overrides[a.task_id]={...(state.overrides[a.task_id]||{}),time:a.time};changed.push("horaire → "+a.time)}else if(a.type==="change_task"&&a.task_id){state.overrides[a.task_id]={...(state.overrides[a.task_id]||{}),...(a.time&&/^([01]\d|2[0-3]):[0-5]\d$/.test(a.time)?{time:a.time}:{}),...(a.name?{name:a.name}:{}),...(a.desc?{desc:a.desc}:{}),...(Number.isFinite(a.xp)?{xp:Math.max(1,Math.min(100,a.xp))}:{})};changed.push(a.time?"quête + horaire modifiés":"quête modifiée")}else if(a.type==="add_task"&&a.name){state.custom.push({id:"ai-"+Date.now()+"-"+Math.random().toString(16).slice(2),time:/^([01]\d|2[0-3]):[0-5]\d$/.test(a.time||"")?a.time:fmtTime(currentMinutes()+30),name:a.name,cat:a.cat||"COACH",desc:a.desc||"Action proposée par le Coach.",xp:Number(a.xp)||10,stat:a.stat||"discipline"});changed.push("nouvelle quête")}else if(a.type==="remove_task"&&a.task_id){state.custom=state.custom.filter(t=>t.id!==a.task_id);delete state.overrides[a.task_id];changed.push("quête supprimée")}else if(a.type==="set_mode"&&(a.mode==="normal"||a.mode==="light")){if(state.mode!==a.mode){state.mode=a.mode;changed.push("mode "+a.mode)}}});if(changed.length)save();return changed}
+function applyCoachActions(actions){if(!Array.isArray(actions))return[];state.removed=Array.isArray(state.removed)?state.removed:[];const changed=[];const all=tasks();actions.forEach(a=>{const q=a.task_id?all.find(t=>t.id===a.task_id):null;const protectedTask=q&&(state.done.includes(q.id)||q.cat==="FIXE");if((a.type==="move_task"||a.type==="change_task"||a.type==="remove_task")&&(!q||protectedTask))return;if(a.type==="move_task"&&a.task_id&&/^([01]\d|2[0-3]):[0-5]\d$/.test(a.time||"")){state.overrides[a.task_id]={...(state.overrides[a.task_id]||{}),time:a.time};changed.push("horaire → "+a.time)}else if(a.type==="change_task"&&a.task_id){state.overrides[a.task_id]={...(state.overrides[a.task_id]||{}),...(a.time&&/^([01]\d|2[0-3]):[0-5]\d$/.test(a.time)?{time:a.time}:{}),...(a.name?{name:a.name}:{}),...(a.desc?{desc:a.desc}:{}),...(Number.isFinite(a.xp)?{xp:Math.max(1,Math.min(100,a.xp))}:{})};changed.push(a.time?"quête + horaire modifiés":"quête modifiée")}else if(a.type==="add_task"&&a.name){state.custom.push({id:"ai-"+Date.now()+"-"+Math.random().toString(16).slice(2),time:/^([01]\d|2[0-3]):[0-5]\d$/.test(a.time||"")?a.time:fmtTime(currentMinutes()+30),name:a.name,cat:a.cat||"COACH",desc:a.desc||"Action proposée par le Coach.",xp:Number(a.xp)||10,stat:a.stat||"discipline"});changed.push("nouvelle quête")}else if(a.type==="remove_task"&&a.task_id){
+  if(!state.removed.includes(a.task_id))state.removed.push(a.task_id);
+  state.custom=state.custom.filter(t=>t.id!==a.task_id);
+  delete state.overrides[a.task_id];
+  changed.push("quête supprimée")
+}else if(a.type==="set_mode"&&(a.mode==="normal"||a.mode==="light")){if(state.mode!==a.mode){state.mode=a.mode;changed.push("mode "+a.mode)}}});if(changed.length)save();return changed}
 function naturalCoachActions(message){
   const low=String(message||"").toLowerCase();
   const all=tasks();
+  const removeIntent=/(?:supprime|supprimer|enlève|enlever|retire|retirer|efface|effacer)/i.test(low);
+  if(removeIntent){
+    const q=all.find(t=>!state.done.includes(t.id)&&t.cat!=="FIXE"&&low.includes(t.name.toLowerCase()));
+    if(q)return [{type:"remove_task",task_id:q.id}];
+  }
   const out=[];
   const timeMatch=low.match(/(?:à|vers|pour)\s*(\\d{1,2})(?:[:h](\\d{2}))?/i);
   const time=timeMatch?String(Number(timeMatch[1])).padStart(2,"0")+":"+(timeMatch[2]||"00"):"";
