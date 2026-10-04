@@ -112,7 +112,7 @@ async function send(){
   document.getElementById("coachState").textContent="Coach IA · réflexion…";
   const started=performance.now();
   try{
-    const r=await fetch("./api/coach",{
+    const r=await fetch("https://my-system-2hpc.vercel.app/api/coach",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
