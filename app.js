@@ -20,6 +20,25 @@ let state=loadState(), questFilter="all", updateWorker=null, reloadOnController=
 function loadState(){try{const raw=JSON.parse(localStorage.getItem(KEY)||"null");return raw?merge(freshState(),raw):freshState()}catch(e){return freshState()}}
 function merge(base,raw){return {...base,...raw,stats:{...base.stats,...(raw.stats||{})},sleep:{...base.sleep,...(raw.sleep||{})},custom:Array.isArray(raw.custom)?raw.custom:[],overrides:raw.overrides||{},removed:Array.isArray(raw.removed)?raw.removed:[],done:Array.isArray(raw.done)?raw.done:[],history:Array.isArray(raw.history)?raw.history:[],coachLog:Array.isArray(raw.coachLog)?raw.coachLog:[],coachResponseId:typeof raw.coachResponseId==="string"?raw.coachResponseId:null}}
 function save(){localStorage.setItem(KEY,JSON.stringify(state));localStorage.setItem(DAYKEY(),JSON.stringify({done:state.done,xp:state.xp,energy:state.energy,mood:state.mood,at:Date.now()}))}
+function syncNativeWidget(){
+  try{
+    const bridge=window.webkit?.messageHandlers?.mySystemState;
+    if(!bridge)return;
+    const q=smartNextTask();
+    bridge.postMessage({
+      currentQuest:q?{id:q.id,time:q.time,name:q.name,desc:q.desc,xp:q.xp}:null,
+      done:Array.isArray(state.done)?state.done:[]
+    });
+  }catch(e){}
+}
+window.__mySystemCompleteFromNative=function(id){
+  try{
+    const q=tasks().find(x=>x.id===id);
+    if(q&&!state.done.includes(id)) completeTask(id);
+    const ready=window.webkit?.messageHandlers?.mySystemReady;
+    if(ready)ready.postMessage("synced");
+  }catch(e){}
+};
 function localDate(){return new Intl.DateTimeFormat("fr-CH",{weekday:"long",day:"numeric",month:"long"}).format(new Date())}
 function currentMinutes(){const d=new Date();return d.getHours()*60+d.getMinutes()}
 function parseTime(t){if(!/^\d{2}:\d{2}$/.test(t||""))return null;const [h,m]=t.split(":").map(Number);return h*60+m}
@@ -204,12 +223,13 @@ function applyUpdate(){if(!updateWorker){location.reload();return}reloadOnContro
 document.getElementById("msg").addEventListener("keydown",e=>{if(e.key==="Enter")send()});
 bubble("Je suis le centre de contrôle de MY SYSTEM. Dis-moi où tu en es vraiment : je peux t’aider à choisir la prochaine action et, quand l’IA est connectée, agir directement sur ton planning.","coach");
 renderAll();setupUpdates();setInterval(()=>{renderClock();renderHome()},30000);
+setTimeout(()=>{try{window.webkit?.messageHandlers?.mySystemReady?.postMessage("ready")}catch(e){}},500);
 /* MY SYSTEM adaptive core */
 (function(){
 const today=()=>new Date().toISOString().slice(0,10), valid=t=>/^([01]\d|2[0-3]):[0-5]\d$/.test(t||""), mins=t=>valid(t)?Number(t.slice(0,2))*60+Number(t.slice(3)):null, esc2=s=>String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 state.achievements=Array.isArray(state.achievements)?state.achievements:[];state.dayPlan=state.dayPlan||{note:"",anchors:[]};state.arcs=state.arcs||{current:"FOUNDATION",days:0};state.dayKey=state.dayKey||today();state.dayXp=Number.isFinite(state.dayXp)?state.dayXp:0;
 if(state.dayKey!==today()){state.history=Array.isArray(state.history)?state.history:[];state.history.push({date:state.dayKey,type:"day_end",done:state.done.length,dayXp:state.dayXp});state.done=[];state.dayXp=0;state.journal="";state.dayKey=today();state.arcs.days=(state.arcs.days||0)+1}
-const oldSave=save;save=function(){state.dayKey=today();localStorage.setItem(KEY,JSON.stringify(state));const d=new Date(),k="mysystem-"+d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");localStorage.setItem(k,JSON.stringify({done:state.done,xp:state.dayXp,energy:state.energy,mood:state.mood,at:Date.now()}))};
+const oldSave=save;save=function(){state.dayKey=today();localStorage.setItem(KEY,JSON.stringify(state));const d=new Date(),k="mysystem-"+d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");localStorage.setItem(k,JSON.stringify({done:state.done,xp:state.dayXp,energy:state.energy,mood:state.mood,at:Date.now()}));syncNativeWidget()};
 function achievement(id,name){if(!state.achievements.includes(id)){state.achievements.push(id);state.history.push({date:new Date().toISOString(),type:"achievement",id,name});toast("✦ SUCCÈS · "+name)}}
 function checkAchievements(){const n=state.history.filter(x=>x.type==="complete").length;if(state.xp>=100)achievement("lvl2","Premier niveau");if(n>=10)achievement("10quests","10 quêtes");if(state.dayXp>=50)achievement("50day","Journée solide");if(state.dayXp>=100)achievement("100day","Journée complète")}
 window.completeTask=function(id){if(state.done.includes(id))return;const q=tasks().find(x=>x.id===id);if(!q)return;state.done.push(id);state.xp+=q.xp;state.dayXp+=q.xp;if(q.xp)state.stats[q.stat]=Math.min(100,(state.stats[q.stat]||0)+Math.max(1,Math.round(q.xp/8)));state.history.push({date:new Date().toISOString(),type:"complete",task:id,xp:q.xp});checkAchievements();save();toast("✦ QUÊTE ACCOMPLIE · +"+q.xp+" XP");renderAll()};
