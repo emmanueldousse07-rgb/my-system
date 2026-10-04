@@ -14,11 +14,11 @@ const defaults=[
 {id:"tomorrow",time:"22:30",name:"Préparer demain",cat:"ORGANISATION",desc:"Choisir une priorité et rendre demain plus facile.",xp:12,stat:"discipline"},
 {id:"calm",time:"23:00",name:"Mode calme",cat:"RÉCUPÉRATION",desc:"Ralentir progressivement et protéger ta nuit.",xp:15,stat:"recovery"}
 ];
-const freshState=()=>({xp:0,done:[],mode:"normal",energy:7,mood:7,stats:{health:28,fitness:24,knowledge:31,discipline:27,social:23,mood:34,recovery:29,energy:36},pantry:["œufs","riz","fruits","yaourt"],journal:"",custom:[],overrides:{},sleep:{wake:"08:00",fatigue:7,usual:"23:00"},history:[],coachLog:[],avatar:{style:"neon",hair:"short",accent:"violet"}});
+const freshState=()=>({xp:0,done:[],mode:"normal",energy:7,mood:7,stats:{health:28,fitness:24,knowledge:31,discipline:27,social:23,mood:34,recovery:29,energy:36},pantry:["œufs","riz","fruits","yaourt"],journal:"",custom:[],overrides:{},sleep:{wake:"08:00",fatigue:7,usual:"23:00"},history:[],coachLog:[],coachResponseId:null,avatar:{style:"neon",hair:"short",accent:"violet"}});
 let state=loadState(), questFilter="all", updateWorker=null, reloadOnController=false;
 
 function loadState(){try{const raw=JSON.parse(localStorage.getItem(KEY)||"null");return raw?merge(freshState(),raw):freshState()}catch(e){return freshState()}}
-function merge(base,raw){return {...base,...raw,stats:{...base.stats,...(raw.stats||{})},sleep:{...base.sleep,...(raw.sleep||{})},custom:Array.isArray(raw.custom)?raw.custom:[],overrides:raw.overrides||{},done:Array.isArray(raw.done)?raw.done:[],history:Array.isArray(raw.history)?raw.history:[],coachLog:Array.isArray(raw.coachLog)?raw.coachLog:[]}}
+function merge(base,raw){return {...base,...raw,stats:{...base.stats,...(raw.stats||{})},sleep:{...base.sleep,...(raw.sleep||{})},custom:Array.isArray(raw.custom)?raw.custom:[],overrides:raw.overrides||{},done:Array.isArray(raw.done)?raw.done:[],history:Array.isArray(raw.history)?raw.history:[],coachLog:Array.isArray(raw.coachLog)?raw.coachLog:[],coachResponseId:typeof raw.coachResponseId==="string"?raw.coachResponseId:null}}
 function save(){localStorage.setItem(KEY,JSON.stringify(state));localStorage.setItem(DAYKEY(),JSON.stringify({done:state.done,xp:state.xp,energy:state.energy,mood:state.mood,at:Date.now()}))}
 function localDate(){return new Intl.DateTimeFormat("fr-CH",{weekday:"long",day:"numeric",month:"long"}).format(new Date())}
 function currentMinutes(){const d=new Date();return d.getHours()*60+d.getMinutes()}
@@ -97,7 +97,54 @@ function voiceJournal(){const Speech=window.SpeechRecognition||window.webkitSpee
 function coachContextText(){const q=smartNextTask();return "Heure locale: "+fmtTime(currentMinutes())+" · énergie: "+state.energy+"/10 · humeur: "+state.mood+"/10 · mode: "+state.mode+" · progression: "+pct()+"% · prochaine quête: "+(q?q.time+" "+q.name:"aucune")+" · fatigue sommeil: "+state.sleep.fatigue+"/10"}
 function localCoach(m){const low=m.toLowerCase();const tm=low.match(/(?:à|vers|pour)\s*(\d{1,2})[:h](\d{2})/);if((low.includes("déplace")||low.includes("décale")||low.includes("repousse")||low.includes("avance"))&&tm){const q=tasks().find(t=>low.includes(t.name.toLowerCase()));if(q){const time=tm[1].padStart(2,"0")+":"+tm[2];state.overrides[q.id]={...(state.overrides[q.id]||{}),time};save();renderAll();return"Je l’ai déplacée : « "+q.name+" » passe à "+time+"."}}if(low.includes("maintenant")||low.includes("quoi faire")){const q=smartNextTask();return q?"Fais seulement « "+q.name+" ». "+q.desc:"Ton socle est terminé. Tu es libre."}if(low.includes("organis"))return"Je regarde l’heure, ton énergie et les quêtes restantes. La prochaine priorité est « "+(smartNextTask()?.name||"une activité choisie")+" ».";if(low.includes("fatigu")||low.includes("dormi"))return"On baisse l’intensité. Le but est de protéger les essentiels et ta récupération, pas de tout rattraper.";return"Je garde ça comme contexte. Je peux déjà agir localement sur les quêtes ; avec l’IA connectée, je peux analyser plus finement ta situation."}
 function applyCoachActions(actions){if(!Array.isArray(actions))return[];const changed=[];actions.forEach(a=>{if(a.type==="move_task"&&a.task_id&&/^([01]\d|2[0-3]):[0-5]\d$/.test(a.time||"")){state.overrides[a.task_id]={...(state.overrides[a.task_id]||{}),time:a.time};changed.push("horaire → "+a.time)}else if(a.type==="change_task"&&a.task_id){state.overrides[a.task_id]={...(state.overrides[a.task_id]||{}),...(a.name?{name:a.name}:{}),...(a.desc?{desc:a.desc}:{}),...(Number.isFinite(a.xp)?{xp:Math.max(1,Math.min(100,a.xp))}:{})};changed.push("quête modifiée")}else if(a.type==="add_task"&&a.name){state.custom.push({id:"ai-"+Date.now()+"-"+Math.random().toString(16).slice(2),time:/^([01]\d|2[0-3]):[0-5]\d$/.test(a.time||"")?a.time:fmtTime(currentMinutes()+30),name:a.name,cat:a.cat||"COACH",desc:a.desc||"Action proposée par le Coach.",xp:Number(a.xp)||10,stat:a.stat||"discipline"});changed.push("nouvelle quête")}else if(a.type==="remove_task"&&a.task_id){state.custom=state.custom.filter(t=>t.id!==a.task_id);delete state.overrides[a.task_id];changed.push("quête supprimée")}else if(a.type==="set_mode"&&(a.mode==="normal"||a.mode==="light")){state.mode=a.mode;changed.push("mode "+a.mode)}});if(changed.length)save();return changed}
-async function send(){const input=document.getElementById("msg"),m=input.value.trim();if(!m)return;bubble(m,"me");input.value="";const placeholder=document.createElement("div");placeholder.className="bubble coach";placeholder.textContent="Je regarde ton système…";document.getElementById("chat").appendChild(placeholder);document.getElementById("chat").scrollTop=99999;document.getElementById("coachState").textContent="Analyse du contexte…";try{const r=await fetch("./api/coach",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:m,state,context:coachContextText(),tasks:tasks()})});if(!r.ok)throw new Error("offline");const d=await r.json();placeholder.textContent=d.reply||"J’ai analysé ta situation.";const changed=applyCoachActions(d.actions||[]);if(changed.length)bubble("⚙ Système ajusté · "+changed.join(" · "),"coach");state.coachLog.push({date:new Date().toISOString(),message:m,reply:d.reply||""});save();document.getElementById("coachState").textContent="GPT-6 Luna · système pilotable";renderAll()}catch(e){placeholder.textContent=localCoach(m);document.getElementById("coachState").textContent="Mode local · IA indisponible"}}
+async function send(){
+  const input=document.getElementById("msg"),m=input.value.trim();
+  if(!m||window.__coachBusy)return;
+  window.__coachBusy=true;
+  bubble(m,"me");
+  input.value="";
+  input.disabled=true;
+  const placeholder=document.createElement("div");
+  placeholder.className="bubble coach";
+  placeholder.textContent="…";
+  document.getElementById("chat").appendChild(placeholder);
+  document.getElementById("chat").scrollTop=99999;
+  document.getElementById("coachState").textContent="Coach IA · réflexion…";
+  const started=performance.now();
+  try{
+    const r=await fetch("./api/coach",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        message:m,
+        state,
+        context:coachContextText(),
+        tasks:tasks(),
+        previous_response_id:state.coachResponseId||null
+      })
+    });
+    if(!r.ok)throw new Error("offline");
+    const d=await r.json();
+    placeholder.textContent=d.reply||"Je t’écoute.";
+    if(d.response_id)state.coachResponseId=d.response_id;
+    const changed=applyCoachActions(d.actions||[]);
+    if(changed.length)bubble("⚙ Système ajusté · "+changed.join(" · "),"coach");
+    state.coachLog=Array.isArray(state.coachLog)?state.coachLog:[];
+    state.coachLog.push({date:new Date().toISOString(),message:m,reply:d.reply||""});
+    state.coachLog=state.coachLog.slice(-40);
+    save();
+    const ms=Math.round(performance.now()-started);
+    document.getElementById("coachState").textContent="GPT-6 Luna · connecté · "+(ms<2500?"rapide":"analyse");
+    renderAll();
+  }catch(e){
+    placeholder.textContent=localCoach(m);
+    document.getElementById("coachState").textContent="Mode local · IA indisponible";
+  }finally{
+    window.__coachBusy=false;
+    input.disabled=false;
+    input.focus();
+  }
+}
 function resetToday(){if(!confirm("Réinitialiser les quêtes et XP de cette journée ?"))return;state.done=[];state.xp=0;save();toast("Journée réinitialisée");renderAll()}
 
 function renderAll(){document.getElementById("level").textContent=lvl();document.getElementById("charLevel").textContent=lvl();document.getElementById("todayLabel").textContent=localDate().toUpperCase();document.getElementById("coachContext").textContent=coachContextText();renderHome();renderClock();renderQuests();renderAvatar();renderDayBrief();renderStats();renderNutrition();renderSleep();renderReport()}
