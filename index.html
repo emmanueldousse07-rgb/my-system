@@ -3,71 +3,109 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#090a0f">
+<meta name="theme-color" content="#08090f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MY SYSTEM">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon.svg">
-<title>MY SYSTEM</title>
-<style>
-:root{--bg:#08090e;--panel:#11131b;--panel2:#181b25;--line:#272b38;--text:#f5f6fa;--muted:#8d93a5;--a:#8b7cff;--g:#55d98b;--gold:#f3c969}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Arial,sans-serif}
-body{min-height:100vh}button,input{font:inherit}button{cursor:pointer}
-.app{max-width:620px;margin:auto;min-height:100vh;padding-bottom:95px}
-header{position:sticky;top:0;z-index:5;padding:18px 18px 10px;background:#08090eee;backdrop-filter:blur(20px)}
-.top{display:flex;justify-content:space-between;align-items:center}.brand{font-size:12px;font-weight:900;letter-spacing:2px;color:var(--muted)}.lv{font-weight:900}
-.bar{height:5px;background:var(--line);border-radius:10px;margin-top:9px;overflow:hidden}.fill{height:100%;width:0;background:var(--a);transition:.3s}
-main{padding:8px 15px}.screen{display:none}.screen.active{display:block}
-h1{font-size:34px;line-height:1.02;margin:20px 4px 6px}.sub{color:var(--muted);margin:0 4px 20px}
-.quest{border:1px solid var(--line);border-radius:26px;padding:25px 20px;background:linear-gradient(145deg,#171a24,#10121a);box-shadow:0 18px 50px #0006}
-.eyebrow{font-size:11px;letter-spacing:1.5px;font-weight:900;color:var(--a);text-transform:uppercase}.title{font-size:29px;line-height:1.1;font-weight:900;margin-top:13px}.time{color:var(--muted);margin-top:9px}.xp{color:var(--gold);font-weight:900;margin-top:19px}
-.primary,.secondary,.send,.tab{border:0}.primary{width:100%;margin-top:23px;padding:17px;border-radius:17px;background:var(--g);color:#06120a;font-weight:900;font-size:17px}.secondary{width:100%;margin-top:9px;padding:14px;border-radius:16px;background:var(--panel2);color:white;font-weight:750}
-.panel{border:1px solid var(--line);background:var(--panel);border-radius:21px;padding:17px;margin-top:12px}.cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}.card{border:1px solid var(--line);background:var(--panel);border-radius:19px;padding:17px}.num{font-size:27px;font-weight:900}.muted{font-size:12px;color:var(--muted);margin-top:4px}
-.chat{height:390px;overflow:auto;display:flex;flex-direction:column;gap:9px}.bubble{max-width:88%;padding:12px 14px;border-radius:17px;line-height:1.42}.coach{background:var(--panel2);align-self:flex-start}.me{background:var(--a);align-self:flex-end}.input{display:flex;gap:8px;margin-top:10px}.input input{flex:1;min-width:0;background:var(--panel2);border:1px solid var(--line);border-radius:16px;color:white;padding:14px;font-size:16px;outline:0}.send{width:52px;border-radius:16px;background:var(--a);color:white;font-weight:900}
-.nav{position:fixed;left:0;right:0;bottom:0;z-index:10;background:#0c0d13f5;backdrop-filter:blur(20px);border-top:1px solid var(--line)}.navin{max-width:620px;margin:auto;display:grid;grid-template-columns:repeat(4,1fr);padding:7px 8px calc(7px + env(safe-area-inset-bottom))}.nav button{background:none;color:var(--muted);padding:7px 2px;border:0;font-size:11px;font-weight:800}.nav button.active{color:white}.ico{font-size:20px;display:block;margin-bottom:3px}
-.empty{text-align:center;padding:65px 20px;color:var(--muted)}.empty strong{display:block;color:white;font-size:23px;margin-bottom:8px}.notice{font-size:13px;color:#bcb8ff;background:#151322;border-radius:15px;padding:12px 14px;margin-top:12px}
-.list{display:flex;flex-direction:column;gap:8px}.item{display:flex;align-items:center;gap:12px;padding:13px;background:var(--panel2);border-radius:15px}.dot{width:10px;height:10px;border-radius:50%;background:var(--line)}.dot.done{background:var(--g)}
-</style>
+<link rel="stylesheet" href="styles.css">
+<title>MY SYSTEM — V4</title>
 </head>
 <body>
+<div class="ambient a1"></div><div class="ambient a2"></div>
 <div class="app">
-<header><div class="top"><div class="brand">MY SYSTEM</div><div class="lv" id="lv">LVL 1</div></div><div class="bar"><div class="fill" id="fill"></div></div></header>
-<main>
-<section id="today" class="screen active"><h1>Quête actuelle</h1><p class="sub" id="todaySub"></p><div id="quest"></div></section>
-<section id="coach" class="screen"><h1>Coach</h1><p class="sub">Tu lui parles normalement. Le système s’adapte à ta réalité.</p><div class="panel chat" id="chat"></div><div class="input"><input id="msg" placeholder="Ex. je viens de me réveiller à 10h30"><button class="send" onclick="send()">➤</button></div><div class="notice">Coach IA : interface prête. Connexion serveur à brancher ensuite pour utiliser un vrai modèle sans exposer de clé dans l’iPhone.</div></section>
-<section id="status" class="screen"><h1>Status</h1><p class="sub">Progression globale.</p><div class="cards"><div class="card"><div class="num" id="sLv">1</div><div class="muted">NIVEAU</div></div><div class="card"><div class="num" id="sXp">0</div><div class="muted">XP TOTAL</div></div><div class="card"><div class="num" id="sDone">0</div><div class="muted">QUÊTES</div></div><div class="card"><div class="num" id="sPct">0%</div><div class="muted">JOUR</div></div></div><div class="panel"><b>ARC</b><div style="font-size:24px;font-weight:900;margin-top:7px">RECONSTRUCTION</div><div class="muted">Rythme · corps · études · vie sociale · autonomie</div></div></section>
-<section id="report" class="screen"><h1>Bilan</h1><p class="sub">Ce qui s’est réellement passé aujourd’hui.</p><div class="panel"><div id="report"></div></div><button class="secondary" onclick="resetDay()">Réinitialiser la journée</button></section>
-</main></div>
-<div class="nav"><div class="navin">
-<button class="active" onclick="show('today',this)"><span class="ico">⚔️</span>Quêtes</button>
-<button onclick="show('coach',this)"><span class="ico">🧠</span>Coach</button>
-<button onclick="show('status',this)"><span class="ico">📈</span>Status</button>
-<button onclick="show('report',this)"><span class="ico">📜</span>Bilan</button>
-</div></div>
-<script>
-const KEY='mysystem-v3-'+new Date().toISOString().slice(0,10);
-const tasks=[
-['08:00','Réveil — sortir du lit','BODY',10],['08:20','Boire un verre d’eau','BODY',5],['08:35','Douche + s’habiller','BODY',10],['09:00','Petit-déjeuner','BODY',10],['10:00','Bloc EPFL','INT',30],['12:30','Pause repas','BODY',10],['14:30','Sortir 10–20 min','BODY',10],['17:30','Un vrai contact humain','SOCIAL',20],['19:00','Bouger / sport','BODY',25],['20:30','Une chose juste pour toi','LIFE',20],['22:30','Préparer demain','WILL',15],['23:00','Passer en mode calme','WILL',15]];
-let state=JSON.parse(localStorage.getItem(KEY)||'null')||{i:0,xp:0,done:[],stats:{BODY:1,INT:1,WILL:1,SOCIAL:1}};
-const level=()=>Math.floor(state.xp/100)+1;
-function save(){localStorage.setItem(KEY,JSON.stringify(state));render()}
-function render(){
- const l=level();document.getElementById('lv').textContent='LVL '+l;document.getElementById('fill').style.width=(state.xp%100)+'%';
- document.getElementById('todaySub').textContent=new Date().toLocaleDateString('fr-CH',{weekday:'long',day:'numeric',month:'long'});
- const q=tasks[state.i];
- document.getElementById('quest').innerHTML=q?'<div class="quest"><div class="eyebrow">'+q[2]+' · '+q[0]+'</div><div class="title">'+q[1]+'</div><div class="time">Objectif flexible : adapte l’heure si ta journée change.</div><div class="xp">+'+q[3]+' XP</div><button class="primary" onclick="complete()">✓ C’est fait</button><button class="secondary" onclick="moveTask()">Adapter cette quête</button></div>':'<div class="empty"><strong>Journée terminée.</strong>Tu as fait ce qui comptait aujourd’hui.</div>';
- document.getElementById('sLv').textContent=l;document.getElementById('sXp').textContent=state.xp;document.getElementById('sDone').textContent=state.done.length;document.getElementById('sPct').textContent=Math.round(state.done.length/tasks.length*100)+'%';
- document.getElementById('report').innerHTML='<b>'+state.done.length+' / '+tasks.length+' quêtes terminées</b><div class="list" style="margin-top:12px">'+tasks.map((t,i)=>'<div class="item"><span class="dot '+(state.done.includes(i)?'done':'')+'"></span><span>'+t[0]+' — '+t[1]+'</span></div>').join('')+'</div>';
-}
-function complete(){const q=tasks[state.i];if(!q)return;state.xp+=q[3];state.done.push(state.i);state.stats[q[2]]=(state.stats[q[2]]||1)+1;state.i++;navigator.vibrate?.(18);save()}
-function moveTask(){const q=tasks[state.i];if(!q)return;const x=prompt('Nouvelle heure pour cette quête ?',q[0]);if(x){q[0]=x;render()}}
-function resetDay(){if(confirm('Réinitialiser la journée ?')){localStorage.removeItem(KEY);location.reload()}}
-function show(id,b){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active')}
-function bubble(t,c){const e=document.createElement('div');e.className='bubble '+c;e.textContent=t;document.getElementById('chat').appendChild(e);document.getElementById('chat').scrollTop=99999}
-function send(){const i=document.getElementById('msg'),m=i.value.trim();if(!m)return;bubble(m,'me');i.value='';let r='Je prends ta situation en compte. Pour l’instant, fais seulement la prochaine action affichée dans Quêtes. La vraie version du Coach pourra ensuite reconstruire automatiquement ton planning.';const x=m.toLowerCase();if(x.includes('réveil')||x.includes('réveill'))r='Pas grave si tu es en retard. On ne rattrape pas le temps perdu : on décale le système et on repart de maintenant. Va dans Quêtes pour ta prochaine action.';if(x.includes('cours')||x.includes('epfl'))r='Le réel passe avant le planning : ton cours est prioritaire. Le reste doit s’adapter autour de lui.';if(x.includes('fatigu'))r='On baisse la charge plutôt que d’abandonner toute la journée. Une petite mission utile suffit pour relancer la machine.';setTimeout(()=>bubble(r,'coach'),220)}
-bubble('Je suis prêt. Dis-moi simplement où tu en es maintenant.','coach');render();
-if('serviceWorker' in navigator && location.protocol!=='file:') navigator.serviceWorker.register('./sw.js').catch(()=>{});
-</script>
-</body></html>
+<header class="topbar">
+  <button class="brand" onclick="go('home')"><span class="brand-mark">M</span><span>MY SYSTEM</span></button>
+  <div class="top-actions"><button class="icon-btn" onclick="go('coach')" aria-label="Coach">✦</button><div class="level-pill">LVL <b id="level">1</b></div></div>
+</header>
+
+<main id="main">
+<section id="home" class="screen active">
+  <div class="hero">
+    <div class="eyebrow">DIMANCHE · 4 OCTOBRE</div>
+    <h1>Construis ta<br><span>meilleure journée.</span></h1>
+    <p class="lead" id="heroText">Une seule chose à faire maintenant. Le reste peut attendre.</p>
+  </div>
+  <div id="currentQuest"></div>
+  <div id="explore"></div>
+  <div class="section-head"><div><span class="eyebrow">APERÇU</span><h2>Aujourd’hui</h2></div><button class="ghost" onclick="go('report')">Voir le bilan →</button></div>
+  <div class="metric-grid">
+    <div class="metric"><span>⚡</span><b id="todayXp">0</b><small>XP aujourd’hui</small></div>
+    <div class="metric"><span>✓</span><b id="todayPct">0%</b><small>journée</small></div>
+    <div class="metric"><span>◒</span><b id="energy">7</b><small>énergie</small></div>
+    <div class="metric"><span>☺</span><b id="mood">7</b><small>humeur</small></div>
+  </div>
+</section>
+
+<section id="quests" class="screen">
+  <div class="page-head"><span class="eyebrow">MISSIONS</span><h1>Quêtes</h1><p>Le système te donne une seule prochaine action. Tu avances, il s’adapte.</p></div>
+  <div class="panel compact"><div class="row"><div><b>Mode du jour</b><small>Normal · adaptable</small></div><button class="toggle on" id="modeToggle" onclick="toggleMode()"><i></i></button></div></div>
+  <div class="quest-list" id="questList"></div>
+  <button class="wide secondary" onclick="addCustomQuest()">＋ Ajouter une quête</button>
+</section>
+
+<section id="coach" class="screen">
+  <div class="page-head"><span class="eyebrow">CENTRE DE CONTRÔLE</span><h1>Coach</h1><p>Parle normalement. Le Coach est là pour comprendre, pas pour te juger.</p></div>
+  <div class="coach-orb"><div class="orb-core">✦</div><div><b>Coach personnel</b><small id="coachState">Système prêt · IA connectable</small></div></div>
+  <div class="chat" id="chat"></div>
+  <div class="quick-row"><button onclick="quick('Aide-moi à organiser ma journée.')">Organise ma journée</button><button onclick="quick('Qu’est-ce qui serait le plus utile pour moi maintenant ?')">Que faire maintenant ?</button></div>
+  <div class="composer"><input id="msg" placeholder="Dis-moi où tu en es…"><button onclick="send()">➤</button></div>
+  <div class="voice-strip"><button class="voice" id="voiceBtn" onclick="voiceJournal()">🎙</button><div><b>Parler au Coach</b><small>Raconte ta journée à voix haute</small></div></div>
+</section>
+
+<section id="character" class="screen">
+  <div class="page-head"><span class="eyebrow">PERSONNAGE</span><h1>Ton évolution</h1><p>Les stats représentent tes habitudes et capacités, pas ta valeur.</p></div>
+  <div class="character-card">
+    <div class="avatar"><div class="avatar-glow"></div><span>YOU</span><em>LVL <b id="charLevel">1</b></em></div>
+    <div class="character-copy"><span class="eyebrow">ARC 01</span><h2>RECONSTRUCTION</h2><p>Stabiliser ton rythme, ton énergie et ta capacité à avancer.</p></div>
+  </div>
+  <div class="stat-section"><div class="section-head"><h2>Caractéristiques</h2><span class="muted">progression lente</span></div><div id="stats"></div></div>
+  <div class="panel insight"><span class="eyebrow">LECTURE DU COACH</span><p id="statInsight">Ta progression se construit par petites actions répétées. Le système privilégie la régularité plutôt que la perfection.</p></div>
+</section>
+
+<section id="nutrition" class="screen">
+  <div class="page-head"><span class="eyebrow">NOURRITURE</span><h1>Bien manger.</h1><p>Des repas simples et équilibrés pour soutenir ta journée, sans obsession des chiffres.</p></div>
+  <div class="meal-now"><span class="eyebrow">MAINTENANT</span><h2 id="mealNowTitle">Petit-déjeuner</h2><p id="mealNowText">Une base avec une source de protéines, un féculent/céréale et un fruit.</p><button class="primary" onclick="shuffleMeal()">Me proposer une idée</button></div>
+  <div class="meal-grid" id="mealGrid"></div>
+  <div class="panel"><div class="row"><div><b>Mon frigo</b><small>Ajoute ce que tu as pour recevoir des idées.</small></div><button class="ghost" onclick="editPantry()">Modifier</button></div><div id="pantry" class="chips"></div></div>
+</section>
+
+<section id="journal" class="screen">
+  <div class="page-head"><span class="eyebrow">SOIR</span><h1>Journal vocal</h1><p>Tu racontes. Le système écoute, structure et prépare demain.</p></div>
+  <div class="journal-card">
+    <div class="record-ring" id="recordRing"><button onclick="voiceJournal()" id="recordBtn">🎙</button></div>
+    <h2 id="recordTitle">Raconte ta journée</h2>
+    <p id="recordText">Pas besoin de réfléchir aux bonnes questions. Parle comme tu parlerais à quelqu’un.</p>
+  </div>
+  <textarea id="journalText" placeholder="Ou écris ici ce que tu veux retenir…"></textarea>
+  <button class="wide primary" onclick="analyzeJournal()">Analyser ma journée</button>
+  <div id="journalResult"></div>
+</section>
+
+<section id="report" class="screen">
+  <div class="page-head"><span class="eyebrow">PROGRESSION</span><h1>Bilan</h1><p>Comprendre la journée pour rendre la suivante un peu meilleure.</p></div>
+  <div class="score-card"><span class="eyebrow">JOURNÉE</span><div class="score"><b id="score">0</b><span>/100</span></div><p id="scoreText">Commence par une petite action.</p></div>
+  <div class="section-head"><h2>Ce qui a compté</h2></div><div class="report-list" id="reportList"></div>
+  <div class="section-head"><h2>Demain</h2></div>
+  <div class="panel recommendations" id="recommendations"></div>
+  <div class="section-head"><h2>Arc actuel</h2></div>
+  <div class="arc-card"><div class="arc-icon">01</div><div><span class="eyebrow">RECONSTRUCTION</span><h3>Reprendre la main</h3><p>Objectif : créer une base stable avant d’augmenter la difficulté.</p><div class="progress"><i style="width:28%"></i></div></div></div>
+</section>
+</main>
+
+<nav class="bottom-nav">
+  <button class="active" data-go="home" onclick="go('home')"><span>⌂</span>Accueil</button>
+  <button data-go="quests" onclick="go('quests')"><span>⚔</span>Quêtes</button>
+  <button data-go="coach" onclick="go('coach')"><span>✦</span>Coach</button>
+  <button data-go="character" onclick="go('character')"><span>◇</span>Perso</button>
+  <button data-go="nutrition" onclick="go('nutrition')"><span>◌</span>Food</button>
+  <button data-go="report" onclick="go('report')"><span>▤</span>Bilan</button>
+</nav>
+
+<div class="modal" id="modal"><div class="modal-backdrop" onclick="closeModal()"></div><div class="modal-sheet" id="modalContent"></div></div>
+<div class="toast" id="toast"></div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
