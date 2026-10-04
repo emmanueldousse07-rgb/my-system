@@ -99,28 +99,40 @@ QUÊTES ACTUELLES
 ${JSON.stringify(tasks)}`;
 
     const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: instructions }] },
-          contents: [{ role: "user", parts: [{ text: message.trim() }] }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 700,
-            responseMimeType: "application/json",
-            responseSchema
-          }
-        })
+    const payload = {
+      system_instruction: { parts: [{ text: instructions }] },
+      contents: [{ role: "user", parts: [{ text: message.trim() }] }],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 700,
+        responseMimeType: "application/json",
+        responseSchema
       }
-    );
+    };
 
-    const data = await response.json();
+    const models = [model, "gemini-3.7-flash"].filter((value, index, arr) => value && arr.indexOf(value) === index);
+    let response;
+    let data;
+    let lastError = "";
+
+    for (const candidate of models) {
+      response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${candidate}:generateContent?key=${encodeURIComponent(apiKey)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        }
+      );
+      data = await response.json();
+      if (response.ok) break;
+
+      lastError = data?.error?.message || `Gemini HTTP ${response.status}`;
+      if (![429, 500, 502, 503, 504].includes(response.status)) break;
+    }
+
     if (!response.ok) {
-      const detail = data?.error?.message || `Gemini HTTP ${response.status}`;
-      return res.status(response.status >= 500 ? 502 : response.status).json({ error: detail });
+      return res.status(response.status >= 500 ? 502 : response.status).json({ error: lastError || "Gemini unavailable" });
     }
 
     const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("") || "";
