@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#08090f">
+<meta name="theme-color" content="#10152b">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MY SYSTEM">
@@ -23,13 +23,20 @@
 <main id="main">
 <section id="home" class="screen active">
   <div class="hero">
+    <div class="hero-stars"></div>
     <div class="eyebrow" id="todayLabel">AUJOURD’HUI</div>
     <h1>Construis ta<br><span>meilleure journée.</span></h1>
-    <p class="lead" id="heroText">Une seule chose à faire maintenant. Le reste peut attendre.</p><div class="home-status"><span id="streak">🔥 0 jour</span><span id="xpProgress">0 / 100 XP</span></div>
+    <p class="lead" id="heroText">Une seule chose à faire maintenant. Le reste peut attendre.</p><div class="home-status"><span id="streak">🔥 0 jour</span><span id="xpProgress">0 / 100 XP</span><span id="scheduleBadge" class="schedule-badge good">DANS LES TEMPS</span></div>
   </div>
-  <div id="currentQuest"></div><div id="dayContext"></div>
+  <div id="systemClock" class="system-clock">
+    <div class="clock-head"><div><span class="eyebrow">SYSTÈME EN DIRECT</span><div id="clockTime" class="clock-time">--:--</div><div id="clockDate" class="clock-date">Aujourd’hui</div></div><div id="clockStatus" class="clock-status good">DANS LES TEMPS</div></div>
+    <div class="clock-track"><div class="clock-line" id="clockLine"></div><div class="timeline" id="timeline"></div></div>
+    <div class="clock-focus" id="clockFocus"></div>
+    <div class="clock-legend"><span>07:00</span><span>Maintenant</span><span>00:00</span></div>
+  </div>
+  <div id="currentQuest"></div><div id="dayContext"></div><div id="scheduleDetail"></div><div id="homeSleep"></div>
   <div id="explore"></div>
-  <div class="section-head"><div><span class="eyebrow">APERÇU</span><h2>Aujourd’hui</h2></div><button class="ghost" onclick="go('report')">Voir le bilan →</button></div>
+  <div class="section-head"><div><span class="eyebrow">APERÇU</span><h2>Ton système</h2></div><button class="ghost" onclick="go('report')">Voir le bilan →</button></div>
   <div class="metric-grid">
     <div class="metric"><span>⚡</span><b id="todayXp">0</b><small>XP aujourd’hui</small></div>
     <div class="metric"><span>✓</span><b id="todayPct">0%</b><small>journée</small></div>
@@ -67,6 +74,7 @@
 <section id="sleep" class="screen">
   <div class="page-head"><span class="eyebrow">RÉCUPÉRATION</span><h1>Sommeil</h1><p>Le système ajuste ton heure de coucher selon ton heure de lever, ta fatigue et ta régularité.</p></div>
   <div class="sleep-hero">
+    <div class="sleep-moon">☾</div>
     <div class="sleep-kicker"><span>CE SOIR</span><span id="sleepStatus">Analyse en cours</span></div>
     <div class="sleep-time" id="bedtime">23:00</div>
     <h2>Commence à ralentir vers cette heure.</h2>
