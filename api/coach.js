@@ -185,10 +185,10 @@ ${JSON.stringify(tasks)}`;
       // Last resort: recover the reply even when Gemini truncated the JSON before
       // the closing quote/bracket. Never expose the raw JSON wrapper to the UI.
       if (!parsed) {
-        const match = cleaned.match(/"reply"\s*:\s*"([\\s\\S]*)/);
+        const match = cleaned.match(/"reply"\s*:\s*"([\s\\S]*)/);
         if (match) {
           let recovered = match[1]
-            .replace(/"\s*,?\s*"actions"\s*:[\\s\\S]*$/i, "")
+            .replace(/"\s*,?\s*"actions"\s*:[\s\\S]*$/i, "")
             .replace(/\\n/g, "\n")
             .replace(/\\r/g, "\r")
             .replace(/\\t/g, "\t")
@@ -204,7 +204,7 @@ ${JSON.stringify(tasks)}`;
         const fallbackReply = cleaned || text || "Je n'ai pas réussi à répondre.";
         const safeReply = fallbackReply
           .replace(/^\s*\{\s*"reply"\s*:\s*"/i, "")
-          .replace(/"\s*,\s*"actions"[\\s\\S]*$/i, "")
+          .replace(/"\s*,\s*"actions"[\s\\S]*$/i, "")
           .replace(/"\s*}\s*$/s, "")
           .trim();
         return res.status(200).json({ reply: safeReply || "Je n'ai pas réussi à répondre.", actions: [], response_id: null });
@@ -236,14 +236,14 @@ ${JSON.stringify(tasks)}`;
     // never rely solely on the model remembering to emit the structured action.
     // This keeps the natural reply while guaranteeing that explicit changes reach MY SYSTEM.
     const userText = message.trim().toLowerCase();
-    const timeMatch = userText.match(/(?:à|vers|pour|vers les)\\s*(\\d{1,2})(?:[:h](\\d{2}))?/i);
+    const timeMatch = userText.match(/(?:à|vers|pour|vers les)\s*(\\d{1,2})(?:[:h](\\d{2}))?/i);
     const explicitTime = timeMatch
       ? String(Number(timeMatch[1])).padStart(2,"0")+":"+(timeMatch[2] ? timeMatch[2] : "00")
       : "";
     const findQuest = (patterns) => taskList.find(t => patterns.some(p => String(t.name||"").toLowerCase().includes(p)));
-    const hasExplicitMove = /\\b(?:déplace|déplacé|décale|décalé|repousse|repoussé|mets|mettre|passe|passer|avance|avancer)\\b/.test(userText);
-    const hasFitnessIntent = /\\b(?:fitness|salle|muscu|musculation|sport)\\b/.test(userText);
-    const hasRunPreference = /\\b(?:cours|courir|course|running)\\b/.test(userText) && /\\b(?:préfère|prefer|finalement|plutôt|plutot)\\b/.test(userText);
+    const hasExplicitMove = /\b(?:déplace|déplacé|décale|décalé|repousse|repoussé|mets|mettre|passe|passer|avance|avancer)\b/.test(userText);
+    const hasFitnessIntent = /\b(?:fitness|salle|muscu|musculation|sport)\b/.test(userText);
+    const hasRunPreference = /\b(?:cours|courir|course|running)\b/.test(userText) && /\b(?:préfère|prefer|finalement|plutôt|plutot)\b/.test(userText);
 
     if (hasFitnessIntent && explicitTime) {
       const q = findQuest(["bouger","sport","fitness","salle"]); 
