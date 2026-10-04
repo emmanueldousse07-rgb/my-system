@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#10152b">
+<meta name="theme-color" content="#070a13">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MY SYSTEM">
@@ -13,112 +13,111 @@
 <title>MY SYSTEM</title>
 </head>
 <body>
-<div class="ambient a1"></div><div class="ambient a2"></div>
+<div class="noise"></div><div class="ambient orb-a"></div><div class="ambient orb-b"></div>
 <div class="app">
 <header class="topbar">
   <button class="brand" onclick="go('home')"><span class="brand-mark">M</span><span>MY SYSTEM</span></button>
-  <div class="top-actions"><button class="icon-btn" onclick="go('coach')" aria-label="Coach">✦</button><div class="level-pill">LVL <b id="level">1</b></div></div>
+  <div class="top-actions"><button class="icon-btn" onclick="go('coach')" aria-label="Coach">✦</button><div class="level-pill"><span>LVL</span><b id="level">1</b></div></div>
 </header>
 
 <main id="main">
 <section id="home" class="screen active">
   <div class="hero">
-    <div class="hero-stars"></div>
-    <div class="eyebrow" id="todayLabel">AUJOURD’HUI</div>
-    <h1>Construis ta<br><span>meilleure journée.</span></h1>
-    <p class="lead" id="heroText">Une seule chose à faire maintenant. Le reste peut attendre.</p><div class="home-status"><span id="streak">🔥 0 jour</span><span id="xpProgress">0 / 100 XP</span><span id="scheduleBadge" class="schedule-badge good">DANS LES TEMPS</span></div>
+    <div class="hero-top"><span class="eyebrow" id="todayLabel">AUJOURD’HUI</span><span class="live-dot">LIVE</span></div>
+    <h1 id="heroTitle">Construis ta<br><span>meilleure journée.</span></h1>
+    <p class="lead" id="heroText">Une seule action importante maintenant. Le reste peut attendre.</p>
+    <div class="hero-stats"><span id="streak">🔥 0 jour</span><span id="xpProgress">0 / 100 XP</span><span id="scheduleBadge" class="status-chip good">DANS LES TEMPS</span></div>
   </div>
-  <div id="systemClock" class="system-clock">
-    <div class="clock-head"><div><span class="eyebrow">SYSTÈME EN DIRECT</span><div id="clockTime" class="clock-time">--:--</div><div id="clockDate" class="clock-date">Aujourd’hui</div></div><div id="clockStatus" class="clock-status good">DANS LES TEMPS</div></div>
-    <div class="clock-track"><div class="clock-line" id="clockLine"></div><div class="timeline" id="timeline"></div></div>
-    <div class="clock-focus" id="clockFocus"></div>
-    <div class="clock-legend"><span>07:00</span><span>Maintenant</span><span>00:00</span></div>
+
+  <div class="system-panel">
+    <div class="system-head">
+      <div><span class="eyebrow">SYSTÈME EN DIRECT</span><div id="clockTime" class="clock-time">--:--</div><div id="clockDate" class="clock-date">Aujourd’hui</div></div>
+      <div class="clock-side"><span id="clockStatus" class="status-chip good">DANS LES TEMPS</span><small id="clockLineText">Analyse du prochain mouvement…</small></div>
+    </div>
+    <div class="timeline"><div class="timeline-now" id="clockLine"></div><div id="timeline"></div></div>
+    <div class="timeline-labels"><span>07:00</span><span>MAINTENANT</span><span>00:00</span></div>
   </div>
-  <div id="currentQuest"></div><div id="dayContext"></div><div id="scheduleDetail"></div><div id="homeSleep"></div>
-  <div id="explore"></div>
-  <div class="section-head"><div><span class="eyebrow">APERÇU</span><h2>Ton système</h2></div><button class="ghost" onclick="go('report')">Voir le bilan →</button></div>
-  <div class="metric-grid">
-    <div class="metric"><span>⚡</span><b id="todayXp">0</b><small>XP aujourd’hui</small></div>
-    <div class="metric"><span>✓</span><b id="todayPct">0%</b><small>journée</small></div>
-    <div class="metric"><span>◒</span><b id="energy">7</b><small>énergie</small></div>
-    <div class="metric"><span>☺</span><b id="mood">7</b><small>humeur</small></div>
+
+  <div id="currentQuest"></div>
+  <div id="dayContext"></div>
+
+  <div class="section-head"><div><span class="eyebrow">TON ÉTAT</span><h2>Comment tu fonctionnes aujourd’hui</h2></div></div>
+  <div class="state-grid">
+    <button class="state-card" onclick="adjustEnergy()"><span>⚡</span><b id="energy">7</b><small>énergie</small></button>
+    <button class="state-card" onclick="adjustMood()"><span>◒</span><b id="mood">7</b><small>humeur</small></button>
+    <button class="state-card" onclick="go('sleep')"><span>☾</span><b id="homeSleepStat">23:00</b><small>coucher cible</small></button>
+    <button class="state-card" onclick="go('report')"><span>↗</span><b id="todayPct">0%</b><small>journée</small></button>
+  </div>
+
+  <div id="homeSleep"></div>
+  <div class="section-head"><div><span class="eyebrow">APERÇU</span><h2>Progression</h2></div><button class="ghost" onclick="go('report')">Bilan →</button></div>
+  <div class="progress-card"><div class="progress-row"><div><b id="todayXp">0 XP</b><small>gagnés aujourd’hui</small></div><div class="level-mini">LVL <b id="homeLevel">1</b></div></div><div class="progress"><i id="homeXpBar"></i></div><div class="progress-meta"><span id="questProgressText">0 / 0 missions</span><span id="homeNextText">Prêt</span></div></div>
+
+  <div class="section-head"><div><span class="eyebrow">ACCÈS RAPIDE</span><h2>Ton système</h2></div></div>
+  <div class="quick-grid">
+    <button onclick="go('quests')"><span>⚔</span><b>Quêtes</b><small>Voir la suite</small></button>
+    <button onclick="go('coach')"><span>✦</span><b>Coach</b><small>Parler au système</small></button>
+    <button onclick="go('nutrition')"><span>◌</span><b>Food</b><small>Idée de repas</small></button>
+    <button onclick="go('journal')"><span>◉</span><b>Journal</b><small>Décharger la journée</small></button>
   </div>
 </section>
 
 <section id="quests" class="screen">
-  <div class="page-head"><span class="eyebrow">MISSIONS</span><h1>Quêtes</h1><p>Le système te donne une seule prochaine action. Tu avances, il s’adapte.</p><div class="quest-summary"><span><b id="questDone">0</b> terminées</span><span><b id="questLeft">0</b> restantes</span><span><b id="questXp">0</b> XP</span></div></div>
-  <div class="panel compact"><div class="row"><div><b>Mode du jour</b><small>Normal · adaptable</small></div><button class="toggle on" id="modeToggle" onclick="toggleMode()"><i></i></button></div></div>
+  <div class="page-head"><span class="eyebrow">MISSIONS</span><h1>Quêtes</h1><p>Le système te montre la prochaine action utile, puis recalcule la suite.</p></div>
+  <div class="quest-overview"><div><b id="questDone">0</b><small>terminées</small></div><div><b id="questLeft">0</b><small>restantes</small></div><div><b id="questXp">0</b><small>XP total</small></div><button class="mode-pill" id="modeToggle" onclick="toggleMode()">NORMAL</button></div>
+  <div class="filter-row"><button class="filter active" data-filter="all" onclick="setQuestFilter('all')">Toutes</button><button class="filter" data-filter="open" onclick="setQuestFilter('open')">À faire</button><button class="filter" data-filter="done" onclick="setQuestFilter('done')">Faites</button></div>
   <div class="quest-list" id="questList"></div>
-  <button class="wide secondary" onclick="addCustomQuest()">＋ Ajouter une quête</button>
+  <button class="wide secondary" onclick="addCustomQuest()">＋ Nouvelle quête</button>
 </section>
 
 <section id="coach" class="screen">
-  <div class="page-head"><span class="eyebrow">CENTRE DE CONTRÔLE</span><h1>Coach</h1><p>Parle normalement. Le Coach est là pour comprendre, pas pour te juger.</p><div class="coach-context" id="coachContext">Contexte local chargé</div></div>
-  <div class="coach-orb"><div class="orb-core">✦</div><div><b>Coach personnel</b><small id="coachState">Système prêt · IA connectable</small></div></div>
+  <div class="page-head"><span class="eyebrow">CENTRE DE CONTRÔLE</span><h1>Coach</h1><p>Parle normalement. Le Coach comprend ton contexte et peut agir sur ton système.</p></div>
+  <div class="coach-hero"><div class="coach-orb"><span>✦</span></div><div><span class="eyebrow">MY SYSTEM AI</span><b>Coach personnel</b><small id="coachState">Connexion au système…</small></div><div class="ai-pulse"></div></div>
+  <div class="coach-context" id="coachContext">Contexte local chargé</div>
   <div class="chat" id="chat"></div>
-  <div class="quick-row"><button onclick="quick('Aide-moi à organiser ma journée.')">Organise ma journée</button><button onclick="quick('Qu’est-ce qui serait le plus utile pour moi maintenant ?')">Que faire maintenant ?</button></div>
-  <div class="composer"><input id="msg" placeholder="Dis-moi où tu en es…"><button onclick="send()">➤</button></div>
-  <div class="voice-strip"><button class="voice" id="voiceBtn" onclick="voiceJournal()">🎙</button><div><b>Parler au Coach</b><small>Raconte ta journée à voix haute</small></div></div>
+  <div class="quick-row"><button onclick="quick('Organise ma journée à partir de maintenant.')">Organise ma journée</button><button onclick="quick('Qu’est-ce qui est le plus utile maintenant ?')">Que faire maintenant ?</button><button onclick="quick('Je suis en retard, adapte la suite.')">Je suis en retard</button></div>
+  <div class="composer"><input id="msg" autocomplete="off" placeholder="Ex. je suis crevé, allège ma soirée…"><button onclick="send()">↑</button></div>
+  <div class="voice-strip"><button class="voice" onclick="voiceJournal()">🎙</button><div><b>Parler au Coach</b><small>Ta voix devient du contexte pour ton système.</small></div></div>
 </section>
 
 <section id="character" class="screen">
-  <div class="page-head"><span class="eyebrow">PERSONNAGE</span><h1>Ton évolution</h1><p>Les stats représentent tes habitudes et capacités, pas ta valeur.</p></div>
-  <div class="character-card">
-    <div class="avatar"><div class="avatar-glow"></div><span>YOU</span><em>LVL <b id="charLevel">1</b></em></div>
-    <div class="character-copy"><span class="eyebrow">ARC 01</span><h2>RECONSTRUCTION</h2><p>Stabiliser ton rythme, ton énergie et ta capacité à avancer.</p></div>
-  </div>
-  <div class="level-progress"><div><b>Progression vers le niveau suivant</b><span id="levelProgressText">0%</span></div><div class="progress"><i id="levelProgressBar" style="width:0%"></i></div></div><div class="stat-section"><div class="section-head"><h2>Caractéristiques</h2><span class="muted">progression lente</span></div><div id="stats"></div></div>
-  <div class="panel insight"><span class="eyebrow">LECTURE DU COACH</span><p id="statInsight">Ta progression se construit par petites actions répétées. Le système privilégie la régularité plutôt que la perfection.</p></div>
+  <div class="page-head"><span class="eyebrow">PERSONNAGE</span><h1>Ton évolution</h1><p>Les stats décrivent tes habitudes. Elles ne définissent jamais ta valeur.</p></div>
+  <div class="character-card"><div class="avatar"><div class="avatar-symbol">M</div><span>USER</span><em>LVL <b id="charLevel">1</b></em></div><div><span class="eyebrow">ARC ACTUEL</span><h2>RECONSTRUCTION</h2><p>Construire une base solide avant d’augmenter la difficulté.</p></div></div>
+  <div class="level-progress"><div><b>Prochain niveau</b><span id="levelProgressText">0%</span></div><div class="progress"><i id="levelProgressBar"></i></div></div>
+  <div class="section-head"><div><span class="eyebrow">ATTRIBUTS</span><h2>Caractéristiques</h2></div></div>
+  <div id="stats"></div>
+  <div class="panel insight"><span class="eyebrow">LECTURE DU COACH</span><p id="statInsight">La progression se construit par petites actions répétées.</p></div>
 </section>
 
 <section id="sleep" class="screen">
-  <div class="page-head"><span class="eyebrow">RÉCUPÉRATION</span><h1>Sommeil</h1><p>Le système ajuste ton heure de coucher selon ton heure de lever, ta fatigue et ta régularité.</p></div>
-  <div class="sleep-hero">
-    <div class="sleep-moon">☾</div>
-    <div class="sleep-kicker"><span>CE SOIR</span><span id="sleepStatus">Analyse en cours</span></div>
-    <div class="sleep-time" id="bedtime">23:00</div>
-    <h2>Commence à ralentir vers cette heure.</h2>
-    <p id="sleepReason">Pour viser suffisamment de sommeil, le système regarde d’abord ton heure de lever et ton niveau de fatigue.</p>
-    <button class="primary" onclick="openSleepSettings()">Ajuster mon rythme</button>
-  </div>
-  <div class="sleep-grid">
-    <div class="sleep-stat"><span>☾</span><b id="sleepTarget">9 h</b><small>objectif de sommeil</small></div>
-    <div class="sleep-stat"><span>◒</span><b id="sleepFatigue">7/10</b><small>fatigue déclarée</small></div>
-    <div class="sleep-stat"><span>↗</span><b id="sleepWake">08:00</b><small>lever cible</small></div>
-    <div class="sleep-stat"><span>⌁</span><b id="sleepWind">22:15</b><small>début du calme</small></div>
-  </div>
-  <div class="section-head"><div><span class="eyebrow">RYTHME</span><h2>Ta soirée</h2></div></div>
-  <div class="panel sleep-plan" id="sleepPlan"></div>
-  <div class="panel sleep-note"><span class="eyebrow">IMPORTANT</span><p>Les cycles de sommeil ne durent pas exactement 90 minutes et varient d’une nuit à l’autre. Le système ne va donc pas essayer de te réveiller à la minute près sur un « cycle parfait ». Il privilégie une durée suffisante, une heure de lever assez régulière et une descente progressive le soir.</p></div>
+  <div class="page-head"><span class="eyebrow">RÉCUPÉRATION</span><h1>Sommeil</h1><p>Un système de récupération simple : durée suffisante, lever régulier et descente progressive.</p></div>
+  <div class="sleep-hero"><div class="moon">☾</div><div class="sleep-kicker"><span>CE SOIR</span><span id="sleepStatus">ANALYSE</span></div><div class="sleep-time" id="bedtime">23:00</div><h2>Commence à ralentir avant de dormir.</h2><p id="sleepReason">Le système ajuste la cible selon ton lever et ta fatigue.</p><button class="primary" onclick="openSleepSettings()">Ajuster mon rythme</button></div>
+  <div class="sleep-grid"><div><span>OBJECTIF</span><b id="sleepTarget">8.5 h</b><small>de sommeil</small></div><div><span>FATIGUE</span><b id="sleepFatigue">7/10</b><small>déclarée</small></div><div><span>LEVER</span><b id="sleepWake">08:00</b><small>cible</small></div><div><span>CALME</span><b id="sleepWind">22:15</b><small>début</small></div></div>
+  <div class="section-head"><div><span class="eyebrow">PLAN</span><h2>Ta soirée</h2></div></div><div class="panel sleep-plan" id="sleepPlan"></div>
+  <div class="panel sleep-note"><span class="eyebrow">PHILOSOPHIE</span><p>Pas de « cycle parfait » à calculer. Le système privilégie une durée suffisante et un rythme réaliste plutôt qu’une précision artificielle.</p></div>
 </section>
 
 <section id="nutrition" class="screen">
-  <div class="page-head"><span class="eyebrow">NOURRITURE</span><h1>Bien manger.</h1><p>Des repas simples et équilibrés pour soutenir ta journée, sans obsession des chiffres.</p></div>
-  <div class="meal-now"><span class="eyebrow">MAINTENANT</span><h2 id="mealNowTitle">Petit-déjeuner</h2><p id="mealNowText">Une base avec une source de protéines, un féculent/céréale et un fruit.</p><button class="primary" onclick="shuffleMeal()">Me proposer une idée</button></div>
+  <div class="page-head"><span class="eyebrow">NOURRITURE</span><h1>Bien manger.</h1><p>Des idées simples, variées et nourrissantes. Pas besoin de transformer chaque repas en calcul.</p></div>
+  <div class="meal-now"><span class="eyebrow">IDÉE DU MOMENT</span><h2 id="mealNowTitle">Petit-déjeuner</h2><p id="mealNowText">Une base de céréales ou féculent, une source de protéines et un fruit.</p><button class="primary" onclick="shuffleMeal()">Nouvelle idée ↻</button></div>
   <div class="meal-grid" id="mealGrid"></div>
-  <div class="panel"><div class="row"><div><b>Mon frigo</b><small>Ajoute ce que tu as pour recevoir des idées.</small></div><button class="ghost" onclick="editPantry()">Modifier</button></div><div id="pantry" class="chips"></div></div>
+  <div class="panel pantry-panel"><div class="row"><div><b>Mon frigo</b><small>Ce que tu as déjà sous la main.</small></div><button class="ghost" onclick="editPantry()">Modifier</button></div><div id="pantry" class="chips"></div></div>
 </section>
 
 <section id="journal" class="screen">
-  <div class="page-head"><span class="eyebrow">SOIR</span><h1>Journal vocal</h1><p>Tu racontes. Le système écoute, structure et prépare demain.</p></div>
-  <div class="journal-card">
-    <div class="record-ring" id="recordRing"><button onclick="voiceJournal()" id="recordBtn">🎙</button></div>
-    <h2 id="recordTitle">Raconte ta journée</h2>
-    <p id="recordText">Pas besoin de réfléchir aux bonnes questions. Parle comme tu parlerais à quelqu’un.</p>
-  </div>
+  <div class="page-head"><span class="eyebrow">SOIR</span><h1>Journal</h1><p>Raconte ce qui s’est passé. Le système transforme ton retour en contexte pour demain.</p></div>
+  <div class="journal-card"><div class="record-ring"><button onclick="voiceJournal()">🎙</button></div><h2 id="recordTitle">Raconte ta journée</h2><p id="recordText">Tu peux parler sans structure. Dis simplement ce qui t’a fait avancer, bloqué, ou fait du bien.</p></div>
   <textarea id="journalText" placeholder="Ou écris ici ce que tu veux retenir…"></textarea>
   <button class="wide primary" onclick="analyzeJournal()">Analyser ma journée</button>
   <div id="journalResult"></div>
 </section>
 
 <section id="report" class="screen">
-  <div class="page-head"><span class="eyebrow">PROGRESSION</span><h1>Bilan</h1><p>Comprendre la journée pour rendre la suivante un peu meilleure.</p></div>
-  <div class="score-card"><span class="eyebrow">JOURNÉE</span><div class="score"><b id="score">0</b><span>/100</span></div><div class="score-bar"><i id="scoreBar"></i></div><p id="scoreText">Commence par une petite action.</p></div>
+  <div class="page-head"><span class="eyebrow">PROGRESSION</span><h1>Bilan</h1><p>Pas pour te juger. Pour comprendre ce qui fonctionne et préparer la suite.</p></div>
+  <div class="score-card"><div class="score-top"><span class="eyebrow">JOURNÉE</span><span id="scoreMood">STABLE</span></div><div class="score"><b id="score">0</b><span>/100</span></div><div class="score-bar"><i id="scoreBar"></i></div><p id="scoreText">Commence par une petite action.</p></div>
   <div class="section-head"><h2>Ce qui a compté</h2></div><div class="report-list" id="reportList"></div>
-  <div class="section-head"><h2>Demain</h2></div>
-  <div class="panel recommendations" id="recommendations"></div>
-  <div class="section-head"><h2>Arc actuel</h2></div>
-  <div class="arc-card"><div class="arc-icon">01</div><div><span class="eyebrow">RECONSTRUCTION</span><h3>Reprendre la main</h3><p>Objectif : créer une base stable avant d’augmenter la difficulté.</p><div class="progress"><i style="width:28%"></i></div></div></div>
+  <div class="section-head"><h2>Pour la suite</h2></div><div class="panel recommendations" id="recommendations"></div>
+  <button class="wide secondary" onclick="resetToday()">Réinitialiser la journée</button>
 </section>
 </main>
 
@@ -131,7 +130,7 @@
   <button data-go="nutrition" onclick="go('nutrition')"><span>◌</span>Food</button>
   <button data-go="report" onclick="go('report')"><span>▤</span>Bilan</button>
 </nav>
-
+<div class="update-banner" id="updateBanner"><div><b>Nouvelle mise à jour</b><small>MY SYSTEM a évolué.</small></div><button onclick="applyUpdate()">Actualiser</button></div>
 <div class="modal" id="modal"><div class="modal-backdrop" onclick="closeModal()"></div><div class="modal-sheet" id="modalContent"></div></div>
 <div class="toast" id="toast"></div>
 </div>
