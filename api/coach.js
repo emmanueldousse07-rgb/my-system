@@ -152,8 +152,9 @@ ${JSON.stringify(tasks)}`;
           catch { parsed = null; }
         }
         if (!parsed) {
-          console.error("Gemini invalid JSON:", text);
-          return res.status(502).json({ error: "Gemini returned invalid JSON" });
+          // If structured output fails, keep the Coach usable with Gemini's plain-text answer.
+          const fallbackReply = cleaned || text || "Je n'ai pas réussi à répondre.";
+          return res.status(200).json({ reply: fallbackReply, actions: [], response_id: null });
         }
       }
     }
