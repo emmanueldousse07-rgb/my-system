@@ -37,57 +37,10 @@ function quick(text){document.getElementById("msg").value=text;send()}
 function completeTask(id){if(state.done.includes(id))return;const q=tasks().find(x=>x.id===id);if(!q)return;state.done.push(id);state.xp+=q.xp;state.stats[q.stat]=Math.min(100,(state.stats[q.stat]||0)+Math.max(1,Math.round(q.xp/8)));state.history.push({date:new Date().toISOString(),type:"complete",task:id,xp:q.xp});save();toast("✦ QUÊTE ACCOMPLIE · +"+q.xp+" XP");renderAll()}
 function toggleMode(){state.mode=state.mode==="normal"?"light":"normal";save();toast(state.mode==="light"?"Mode léger activé":"Mode normal activé");renderAll()}
 function setQuestFilter(f){questFilter=f;document.querySelectorAll(".filter").forEach(b=>b.classList.toggle("active",b.dataset.filter===f));renderQuests()}
-function editTask(id){
- const q=tasks().find(x=>x.id===id);if(!q||state.done.includes(id)||q.cat==="FIXE")return;
- showModal('<div class="time-edit"><span class="eyebrow">MODIFIER LA QUÊTE</span><h3>'+esc(q.name)+'</h3><p class="time-edit-sub">Choisis directement le nouvel horaire.</p><label for="taskTimeInput">Nouvelle heure</label><input id="taskTimeInput" type="time" value="'+esc(q.time)+'" step="300"><div class="time-preview"><span>AVANT</span><b>'+esc(q.time)+'</b><i>→</i><span>APRÈS</span><strong id="taskTimePreview">'+esc(q.time)+'</strong></div><div class="modal-actions"><button class="secondary" onclick="closeModal()">Annuler</button><button class="primary" onclick="saveTaskTime(\''+q.id+'\')">Enregistrer</button></div></div>');
- const input=document.getElementById("taskTimeInput"),preview=document.getElementById("taskTimePreview");
- if(input&&preview)input.addEventListener("input",()=>preview.textContent=input.value||q.time);
- if(input)input.focus();
-}
-function saveTaskTime(id){
- const q=tasks().find(x=>x.id===id),input=document.getElementById("taskTimeInput"),time=input?.value||"";
- if(!q||!/^([01]\d|2[0-3]):[0-5]\d$/.test(time))return toast("Choisis une heure valide");
- state.overrides[id]={...(state.overrides[id]||{}),time};
- save();closeModal();toast("Horaire → "+time);renderAll();
-}
-function deleteTask(id,source="manual"){
- const q=tasks().find(x=>x.id===id);if(!q||state.done.includes(id)||q.cat==="FIXE")return false;
- state.removed=Array.isArray(state.removed)?state.removed:[];
- if(!state.removed.includes(id))state.removed.push(id);
- state.custom=state.custom.filter(t=>t.id!==id);
- delete state.overrides[id];
- save();toast(source==="swipe"?"Quête supprimée":"Quête supprimée");renderAll();return true;
-}
-function swipeDeleteRow(id,row){
- const dx=Math.max(0,Number(row.dataset.swipeDx||0));
- row.style.transform="";
- row.classList.remove("swiping");
- row.dataset.swipeDx="0";
- if(dx>=90){deleteTask(id,"swipe");return true}
- return false;
-}
-function setupQuestSwipe(){
- const list=document.getElementById("questList");if(!list||list.dataset.swipeReady)return;
- list.dataset.swipeReady="1";
- let startX=0,startY=0,active=null,moved=false;
- list.addEventListener("pointerdown",e=>{
-   const row=e.target.closest(".q-row");if(!row)return;
-   if(e.target.closest("button"))return;
-   active=row;startX=e.clientX;startY=e.clientY;moved=false;row.classList.add("swiping");
- });
- list.addEventListener("pointermove",e=>{
-   if(!active)return;
-   const dx=e.clientX-startX,dy=e.clientY-startY;
-   if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>8){active=null;return}
-   if(dx>4){moved=true;const shift=Math.min(125,dx);active.dataset.swipeDx=String(shift);active.style.transform="translateX("+shift+"px)"}
- });
- list.addEventListener("pointerup",()=>{
-   if(!active)return;
-   const row=active;active=null;
-   if(moved)swipeDeleteRow(row.dataset.id,row);else{row.classList.remove("swiping");row.style.transform=""}
- });
- list.addEventListener("pointercancel",()=>{if(active){active.classList.remove("swiping");active.style.transform="";active=null}});
-}
+function editTask(id){const q=tasks().find(x=>x.id===id);if(!q||state.done.includes(id)||q.cat==="FIXE")return;showModal('<div class="time-edit"><span class="eyebrow">MODIFIER LA QUÊTE</span><h3>'+esc(q.name)+'</h3><p class="time-edit-sub">Choisis directement le nouvel horaire.</p><label>Nouvelle heure</label><input id="taskTimeInput" type="time" value="'+esc(q.time)+'" step="300"><div class="time-preview"><span>AVANT</span><b>'+esc(q.time)+'</b><i>→</i><span>APRÈS</span><strong id="taskTimePreview">'+esc(q.time)+'</strong></div><div class="modal-actions"><button class="secondary" onclick="closeModal()">Annuler</button><button class="primary" onclick="saveTaskTime(\''+q.id+'\')">Enregistrer</button></div></div>');const input=document.getElementById("taskTimeInput"),preview=document.getElementById("taskTimePreview");if(input&&preview)input.addEventListener("input",()=>preview.textContent=input.value||q.time);if(input)input.focus()}
+function saveTaskTime(id){const q=tasks().find(x=>x.id===id),time=document.getElementById("taskTimeInput")?.value||"";if(!q||!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time))return toast("Choisis une heure valide");state.overrides[id]={...(state.overrides[id]||{}),time};save();closeModal();toast("Horaire → "+time);renderAll()}
+function deleteTask(id){const q=tasks().find(x=>x.id===id);if(!q||state.done.includes(id)||q.cat==="FIXE")return false;state.removed=Array.isArray(state.removed)?state.removed:[];if(!state.removed.includes(id))state.removed.push(id);state.custom=state.custom.filter(t=>t.id!==id);delete state.overrides[id];save();toast("Quête supprimée");renderAll();return true}
+function setupQuestSwipe(){const list=document.getElementById("questList");if(!list||list.dataset.swipeReady)return;list.dataset.swipeReady="1";let sx=0,sy=0,row=null,moved=false;list.addEventListener("pointerdown",e=>{const r=e.target.closest(".q-row");if(!r||e.target.closest("button"))return;row=r;sx=e.clientX;sy=e.clientY;moved=false;r.classList.add("swiping")});list.addEventListener("pointermove",e=>{if(!row)return;const dx=e.clientX-sx,dy=e.clientY-sy;if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>8){row=null;return}if(dx>4){moved=true;row.style.transform="translateX("+Math.min(125,dx)+"px)"}});list.addEventListener("pointerup",()=>{if(!row)return;const r=row;row=null;r.classList.remove("swiping");const m=r.style.transform.match(/-?\d+(?:\.\d+)?/);const dx=m?Number(m[0]):0;r.style.transform="";if(moved&&dx>=90)deleteTask(r.dataset.id)});list.addEventListener("pointercancel",()=>{if(row){row.classList.remove("swiping");row.style.transform="";row=null}})}
 function addCustomQuest(){const name=prompt("Nom de la quête");if(!name?.trim())return;const time=prompt("Heure (HH:MM)",fmtTime(currentMinutes()+30));if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)){toast("Heure invalide");return}state.custom.push({id:"custom-"+Date.now(),time,name:name.trim(),cat:"PERSONNEL",desc:"Une action choisie pour aujourd’hui.",xp:10,stat:"discipline"});save();toast("Nouvelle quête créée");renderAll()}
 function adjustEnergy(){const v=prompt("Énergie actuelle sur 10",String(state.energy));if(v===null)return;const n=Math.max(1,Math.min(10,Number(v)));if(!Number.isFinite(n))return;state.energy=n;save();renderAll()}
 function adjustMood(){const v=prompt("Humeur actuelle sur 10",String(state.mood));if(v===null)return;const n=Math.max(1,Math.min(10,Number(v)));if(!Number.isFinite(n))return;state.mood=n;save();renderAll()}
@@ -146,7 +99,7 @@ function voiceJournal(){const Speech=window.SpeechRecognition||window.webkitSpee
 
 function coachContextText(){const q=smartNextTask();return "Heure locale: "+fmtTime(currentMinutes())+" · énergie: "+state.energy+"/10 · humeur: "+state.mood+"/10 · mode: "+state.mode+" · progression: "+pct()+"% · prochaine quête: "+(q?q.time+" "+q.name:"aucune")+" · fatigue sommeil: "+state.sleep.fatigue+"/10"}
 function localCoach(m){const low=m.toLowerCase();const tm=low.match(/(?:à|vers|pour)\s*(\d{1,2})[:h](\d{2})/);if((low.includes("déplace")||low.includes("décale")||low.includes("repousse")||low.includes("avance"))&&tm){const q=tasks().find(t=>low.includes(t.name.toLowerCase()));if(q){const time=tm[1].padStart(2,"0")+":"+tm[2];state.overrides[q.id]={...(state.overrides[q.id]||{}),time};save();renderAll();return"Je l’ai déplacée : « "+q.name+" » passe à "+time+"."}}if(low.includes("maintenant")||low.includes("quoi faire")){const q=smartNextTask();return q?"Fais seulement « "+q.name+" ». "+q.desc:"Ton socle est terminé. Tu es libre."}if(low.includes("organis"))return"Je regarde l’heure, ton énergie et les quêtes restantes. La prochaine priorité est « "+(smartNextTask()?.name||"une activité choisie")+" ».";if(low.includes("fatigu")||low.includes("dormi"))return"On baisse l’intensité. Le but est de protéger les essentiels et ta récupération, pas de tout rattraper.";return"Je garde ça comme contexte. Je peux déjà agir localement sur les quêtes ; avec l’IA connectée, je peux analyser plus finement ta situation."}
-function applyCoachActions(actions){if(!Array.isArray(actions))return[];state.removed=Array.isArray(state.removed)?state.removed:[];const changed=[];const all=tasks();actions.forEach(a=>{const q=a.task_id?all.find(t=>t.id===a.task_id):null;const protectedTask=q&&(state.done.includes(q.id)||q.cat==="FIXE");if((a.type==="move_task"||a.type==="change_task"||a.type==="remove_task")&&(!q||protectedTask))return;if(a.type==="move_task"&&a.task_id&&/^([01]\d|2[0-3]):[0-5]\d$/.test(a.time||"")){state.overrides[a.task_id]={...(state.overrides[a.task_id]||{}),time:a.time};changed.push("horaire → "+a.time)}else if(a.type==="change_task"&&a.task_id){state.overrides[a.task_id]={...(state.overrides[a.task_id]||{}),...(a.time&&/^([01]\d|2[0-3]):[0-5]\d$/.test(a.time)?{time:a.time}:{}),...(a.name?{name:a.name}:{}),...(a.desc?{desc:a.desc}:{}),...(Number.isFinite(a.xp)?{xp:Math.max(1,Math.min(100,a.xp))}:{})};changed.push(a.time?"quête + horaire modifiés":"quête modifiée")}else if(a.type==="add_task"&&a.name){state.custom.push({id:"ai-"+Date.now()+"-"+Math.random().toString(16).slice(2),time:/^([01]\d|2[0-3]):[0-5]\d$/.test(a.time||"")?a.time:fmtTime(currentMinutes()+30),name:a.name,cat:a.cat||"COACH",desc:a.desc||"Action proposée par le Coach.",xp:Number(a.xp)||10,stat:a.stat||"discipline"});changed.push("nouvelle quête")}else if(a.type==="remove_task"&&a.task_id){
+function applyCoachActions(actions){if(!Array.isArray(actions))return[];state.removed=Array.isArray(state.removed)?state.removed:[];state.removed=Array.isArray(state.removed)?state.removed:[];const changed=[];const all=tasks();actions.forEach(a=>{const q=a.task_id?all.find(t=>t.id===a.task_id):null;const protectedTask=q&&(state.done.includes(q.id)||q.cat==="FIXE");if((a.type==="move_task"||a.type==="change_task"||a.type==="remove_task")&&(!q||protectedTask))return;if(a.type==="move_task"&&a.task_id&&/^([01]\d|2[0-3]):[0-5]\d$/.test(a.time||"")){state.overrides[a.task_id]={...(state.overrides[a.task_id]||{}),time:a.time};changed.push("horaire → "+a.time)}else if(a.type==="change_task"&&a.task_id){state.overrides[a.task_id]={...(state.overrides[a.task_id]||{}),...(a.time&&/^([01]\d|2[0-3]):[0-5]\d$/.test(a.time)?{time:a.time}:{}),...(a.name?{name:a.name}:{}),...(a.desc?{desc:a.desc}:{}),...(Number.isFinite(a.xp)?{xp:Math.max(1,Math.min(100,a.xp))}:{})};changed.push(a.time?"quête + horaire modifiés":"quête modifiée")}else if(a.type==="add_task"&&a.name){state.custom.push({id:"ai-"+Date.now()+"-"+Math.random().toString(16).slice(2),time:/^([01]\d|2[0-3]):[0-5]\d$/.test(a.time||"")?a.time:fmtTime(currentMinutes()+30),name:a.name,cat:a.cat||"COACH",desc:a.desc||"Action proposée par le Coach.",xp:Number(a.xp)||10,stat:a.stat||"discipline"});changed.push("nouvelle quête")}else if(a.type==="remove_task"&&a.task_id){
   if(!state.removed.includes(a.task_id))state.removed.push(a.task_id);
   state.custom=state.custom.filter(t=>t.id!==a.task_id);
   delete state.overrides[a.task_id];
