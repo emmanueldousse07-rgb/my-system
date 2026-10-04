@@ -127,8 +127,15 @@ async function send(){
     const d=await r.json();
     placeholder.textContent=d.reply||"Je t’écoute.";
     if(d.response_id)state.coachResponseId=d.response_id;
-    const changed=applyCoachActions(d.actions||[]);
-    if(changed.length)bubble("⚙ Système ajusté · "+changed.join(" · "),"coach");
+    // Always use the protected public action handler so Coach changes are
+    // actually applied to the same state used by the Quêtes screen.
+    const changed=typeof window.applyCoachActions==="function"
+      ? window.applyCoachActions(d.actions||[])
+      : applyCoachActions(d.actions||[]);
+    if(changed.length){
+      bubble("⚙ Système ajusté · "+changed.join(" · "),"coach");
+      save();
+    }
     state.coachLog=Array.isArray(state.coachLog)?state.coachLog:[];
     state.coachLog.push({date:new Date().toISOString(),message:m,reply:d.reply||""});
     state.coachLog=state.coachLog.slice(-40);
