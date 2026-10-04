@@ -1,1 +1,1 @@
-{"name":"MY SYSTEM","short_name":"MY SYSTEM","start_url":"./","display":"standalone","background_color":"#08090e","theme_color":"#090a0f","lang":"fr","icons":[{"src":"icons/icon.svg","sizes":"512x512","type":"image/svg+xml"}]}
+{"name":"MY SYSTEM","short_name":"MY SYSTEM","start_url":"./","display":"standalone","background_color":"#07080d","theme_color":"#08090f","lang":"fr","description":"Système personnel adaptatif de progression, équilibre et autonomie.","icons":[{"src":"icons/icon.svg","sizes":"512x512","type":"image/svg+xml"}]}
