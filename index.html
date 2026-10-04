@@ -10,7 +10,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon.svg">
 <link rel="stylesheet" href="styles.css">
-<title>MY SYSTEM — V4</title>
+<title>MY SYSTEM</title>
 </head>
 <body>
 <div class="ambient a1"></div><div class="ambient a2"></div>
@@ -23,11 +23,11 @@
 <main id="main">
 <section id="home" class="screen active">
   <div class="hero">
-    <div class="eyebrow">DIMANCHE · 4 OCTOBRE</div>
+    <div class="eyebrow" id="todayLabel">AUJOURD’HUI</div>
     <h1>Construis ta<br><span>meilleure journée.</span></h1>
-    <p class="lead" id="heroText">Une seule chose à faire maintenant. Le reste peut attendre.</p>
+    <p class="lead" id="heroText">Une seule chose à faire maintenant. Le reste peut attendre.</p><div class="home-status"><span id="streak">🔥 0 jour</span><span id="xpProgress">0 / 100 XP</span></div>
   </div>
-  <div id="currentQuest"></div>
+  <div id="currentQuest"></div><div id="dayContext"></div>
   <div id="explore"></div>
   <div class="section-head"><div><span class="eyebrow">APERÇU</span><h2>Aujourd’hui</h2></div><button class="ghost" onclick="go('report')">Voir le bilan →</button></div>
   <div class="metric-grid">
@@ -39,14 +39,14 @@
 </section>
 
 <section id="quests" class="screen">
-  <div class="page-head"><span class="eyebrow">MISSIONS</span><h1>Quêtes</h1><p>Le système te donne une seule prochaine action. Tu avances, il s’adapte.</p></div>
+  <div class="page-head"><span class="eyebrow">MISSIONS</span><h1>Quêtes</h1><p>Le système te donne une seule prochaine action. Tu avances, il s’adapte.</p><div class="quest-summary"><span><b id="questDone">0</b> terminées</span><span><b id="questLeft">0</b> restantes</span><span><b id="questXp">0</b> XP</span></div></div>
   <div class="panel compact"><div class="row"><div><b>Mode du jour</b><small>Normal · adaptable</small></div><button class="toggle on" id="modeToggle" onclick="toggleMode()"><i></i></button></div></div>
   <div class="quest-list" id="questList"></div>
   <button class="wide secondary" onclick="addCustomQuest()">＋ Ajouter une quête</button>
 </section>
 
 <section id="coach" class="screen">
-  <div class="page-head"><span class="eyebrow">CENTRE DE CONTRÔLE</span><h1>Coach</h1><p>Parle normalement. Le Coach est là pour comprendre, pas pour te juger.</p></div>
+  <div class="page-head"><span class="eyebrow">CENTRE DE CONTRÔLE</span><h1>Coach</h1><p>Parle normalement. Le Coach est là pour comprendre, pas pour te juger.</p><div class="coach-context" id="coachContext">Contexte local chargé</div></div>
   <div class="coach-orb"><div class="orb-core">✦</div><div><b>Coach personnel</b><small id="coachState">Système prêt · IA connectable</small></div></div>
   <div class="chat" id="chat"></div>
   <div class="quick-row"><button onclick="quick('Aide-moi à organiser ma journée.')">Organise ma journée</button><button onclick="quick('Qu’est-ce qui serait le plus utile pour moi maintenant ?')">Que faire maintenant ?</button></div>
@@ -60,7 +60,7 @@
     <div class="avatar"><div class="avatar-glow"></div><span>YOU</span><em>LVL <b id="charLevel">1</b></em></div>
     <div class="character-copy"><span class="eyebrow">ARC 01</span><h2>RECONSTRUCTION</h2><p>Stabiliser ton rythme, ton énergie et ta capacité à avancer.</p></div>
   </div>
-  <div class="stat-section"><div class="section-head"><h2>Caractéristiques</h2><span class="muted">progression lente</span></div><div id="stats"></div></div>
+  <div class="level-progress"><div><b>Progression vers le niveau suivant</b><span id="levelProgressText">0%</span></div><div class="progress"><i id="levelProgressBar" style="width:0%"></i></div></div><div class="stat-section"><div class="section-head"><h2>Caractéristiques</h2><span class="muted">progression lente</span></div><div id="stats"></div></div>
   <div class="panel insight"><span class="eyebrow">LECTURE DU COACH</span><p id="statInsight">Ta progression se construit par petites actions répétées. Le système privilégie la régularité plutôt que la perfection.</p></div>
 </section>
 
@@ -105,7 +105,7 @@
 
 <section id="report" class="screen">
   <div class="page-head"><span class="eyebrow">PROGRESSION</span><h1>Bilan</h1><p>Comprendre la journée pour rendre la suivante un peu meilleure.</p></div>
-  <div class="score-card"><span class="eyebrow">JOURNÉE</span><div class="score"><b id="score">0</b><span>/100</span></div><p id="scoreText">Commence par une petite action.</p></div>
+  <div class="score-card"><span class="eyebrow">JOURNÉE</span><div class="score"><b id="score">0</b><span>/100</span></div><div class="score-bar"><i id="scoreBar"></i></div><p id="scoreText">Commence par une petite action.</p></div>
   <div class="section-head"><h2>Ce qui a compté</h2></div><div class="report-list" id="reportList"></div>
   <div class="section-head"><h2>Demain</h2></div>
   <div class="panel recommendations" id="recommendations"></div>
