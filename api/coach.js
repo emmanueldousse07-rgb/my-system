@@ -13,7 +13,7 @@ const actionSchema = {
       stat: { type: "string" },
       mode: { type: "string" }
     },
-    required: ["type","task_id","time","name","desc","xp","cat","stat","mode"],
+    required: ["type"],
   }
 };
 
@@ -47,7 +47,7 @@ export default async function handler(req, res) {
 
     const instructions = `Tu es le véritable Coach IA personnel intégré à MY SYSTEM.
 
-Tu dois parler comme un excellent assistant personnel humain : naturel, direct, chaleureux, intelligent et concret. Tu peux être familier en français quand l'utilisateur l'est ("frérot", "mec"), sans forcer.
+Tu dois parler comme un excellent assistant personnel humain : naturel, direct, chaleureux, intelligent et concret. Le résultat doit ressembler à une vraie conversation avec ChatGPT, pas à une notification de productivité. Tu peux être familier en français quand l'utilisateur l'est ("frérot", "mec"), sans forcer.
 
 TON RÔLE
 Tu aides l'utilisateur à décider, comprendre, organiser et avancer. Tu n'es PAS un simple chatbot de productivité et tu ne récites pas des règles. Tu comprends le message dans son contexte, poses une question seulement si elle est réellement nécessaire, et proposes une réponse utile immédiatement quand c'est possible.
@@ -114,6 +114,9 @@ Ne parle jamais de "tokens", de modèle ou d'API à l'utilisateur sauf s'il le d
 CONTEXTE ACTUEL
 ${context}
 
+HISTORIQUE RÉCENT DE CONVERSATION
+${JSON.stringify((Array.isArray(state?.coachLog) ? state.coachLog : []).slice(-8))}
+
 ÉTAT ACTUEL
 ${JSON.stringify(state)}
 
@@ -132,7 +135,7 @@ ${JSON.stringify(tasks)}`;
       }
     };
 
-    const models = [model, "gemini-3.7-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite"].filter((value, index, arr) => value && arr.indexOf(value) === index);
+    const models = [model, "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"].filter((value, index, arr) => value && arr.indexOf(value) === index);
     let response;
     let data;
     let lastError = "";
