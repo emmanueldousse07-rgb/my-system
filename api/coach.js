@@ -186,6 +186,41 @@ ${JSON.stringify(tasks)}`;
       }
     }
 
+    // Normalize and validate actions before they reach the app.
+    let actions = Array.isArray(parsed.actions) ? parsed.actions : [];
+    const taskList = Array.isArray(tasks) ? tasks : [];
+    const validIds = new Set(taskList.map(t => t.id));
+    actions = actions.map(a => ({
+      type: typeof a?.type === "string" ? a.type : "",
+      task_id: typeof a?.task_id === "string" ? a.task_id : "",
+      time: typeof a?.time === "string" ? a.time : "",
+      name: typeof a?.name === "string" ? a.name : "",
+      desc: typeof a?.desc === "string" ? a.desc : "",
+      xp: Number.isFinite(Number(a?.xp)) ? Number(a.xp) : 0,
+      cat: typeof a?.cat === "string" ? a.cat : "",
+      stat: typeof a?.stat === "string" ? a.stat : "",
+      mode: typeof a?.mode === "string" ? a.mode : ""
+    })).filter(a => {
+      if (a.type === "move_task" || a.type === "change_task" || a.type === "remove_task") return validIds.has(a.task_id);
+      if (a.type === "add_task") return !!a.name;
+      if (a.type === "set_mode") return a.mode === "normal" || a.mode === "light";
+      return false;
+    });
+
+    // Recover a concrete move if Gemini described it in reply but omitted the action.
+    const replyForAction = typeof parsed.reply === "string" ? parsed.reply : "";
+    if (!actions.length && replyForAction) {
+      for (const t of taskList) {
+        const escaped = String(t.name).replace(/[.*+?^$()|[\]\\]/g, "\\    // Never expose Gemini's raw JSON to the UI, even if the model nested it in reply.
+    let reply = typeof parsed.reply === "string" ? parsed.reply : "Je t'écoute.";");
+        const re = new RegExp(escaped + "[^\\n]{0,100}?(?:passe|va|déplac|décal|repouss|avance)[^\\n]{0,40}?(\\d{1,2}):([0-5]\\d)", "i");
+        const m = replyForAction.match(re);
+        if (m) {
+          actions.push({type:"move_task",task_id:t.id,time:String(m[1]).padStart(2,"0")+":"+m[2],name:"",desc:"",xp:0,cat:"",stat:"",mode:""});
+          break;
+        }
+      }
+    }
     // Never expose Gemini's raw JSON to the UI, even if the model nested it in reply.
     let reply = typeof parsed.reply === "string" ? parsed.reply : "Je t'écoute.";
     const nested = reply.trim().match(/^\s*\{\s*"reply"\s*:\s*"((?:\\.|[^"\\])*)"/s);
@@ -196,7 +231,7 @@ ${JSON.stringify(tasks)}`;
 
     return res.status(200).json({
       reply,
-      actions: Array.isArray(parsed.actions) ? parsed.actions : [],
+      actions,
       response_id: null
     });
   } catch (error) {
