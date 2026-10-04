@@ -27,7 +27,10 @@ const responseSchema = {
 };
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "https://emmanueldousse07-rgb.github.io");
+  const origin = req.headers.origin || "";
+  const allowed = origin === "https://emmanueldousse07-rgb.github.io" || /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin);
+  if (allowed) res.setHeader("Access-Control-Allow-Origin", origin);
+  res.setHeader("Vary", "Origin");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(204).end();
