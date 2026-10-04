@@ -129,7 +129,7 @@ ${JSON.stringify(tasks)}`;
       contents: [{ role: "user", parts: [{ text: message.trim() }] }],
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 1000,
+        maxOutputTokens: 1600,
         responseMimeType: "application/json",
         responseSchema
       }
@@ -231,6 +231,45 @@ ${JSON.stringify(tasks)}`;
       if (a.type === "set_mode") return a.mode === "normal" || a.mode === "light";
       return false;
     });
+
+    // Deterministic safety net: when the user's wording clearly requests a quest change,
+    // never rely solely on the model remembering to emit the structured action.
+    // This keeps the natural reply while guaranteeing that explicit changes reach MY SYSTEM.
+    const userText = message.trim().toLowerCase();
+    const timeMatch = userText.match(/(?:à|vers|pour|vers les)\\s*(\\d{1,2})(?:[:h](\\d{2}))?/i);
+    const explicitTime = timeMatch
+      ? String(Number(timeMatch[1])).padStart(2,"0")+":"+(timeMatch[2] ? timeMatch[2] : "00")
+      : "";
+    const findQuest = (patterns) => taskList.find(t => patterns.some(p => String(t.name||"").toLowerCase().includes(p)));
+    const hasExplicitMove = /\\b(?:déplace|déplacé|décale|décalé|repousse|repoussé|mets|mettre|passe|passer|avance|avancer)\\b/.test(userText);
+    const hasFitnessIntent = /\\b(?:fitness|salle|muscu|musculation|sport)\\b/.test(userText);
+    const hasRunPreference = /\\b(?:cours|courir|course|running)\\b/.test(userText) && /\\b(?:préfère|prefer|finalement|plutôt|plutot)\\b/.test(userText);
+
+    if (hasFitnessIntent && explicitTime) {
+      const q = findQuest(["bouger","sport","fitness","salle"]); 
+      if (q && !state?.done?.includes(q.id) && q.cat !== "FIXE" && !actions.some(a => a.task_id === q.id && (a.type === "move_task" || a.type === "change_task"))) {
+        actions.push({type:"move_task",task_id:q.id,time:explicitTime,name:"",desc:"",xp:0,cat:"",stat:"",mode:""});
+      }
+    }
+    if (hasRunPreference) {
+      const q = findQuest(["bouger","sport","fitness","salle"]);
+      if (q && !state?.done?.includes(q.id) && q.cat !== "FIXE" && !actions.some(a => a.task_id === q.id && a.type === "change_task")) {
+        actions.push({type:"change_task",task_id:q.id,time:"",name:"Course / running",desc:"Courir à l’intensité adaptée à ton énergie du jour.",xp:0,cat:"",stat:"",mode:""});
+      }
+    }
+    if (hasExplicitMove && explicitTime) {
+      const q = taskList.find(t => {
+        const n = String(t.name||"").toLowerCase();
+        return !state?.done?.includes(t.id) && t.cat !== "FIXE" && (
+          userText.includes(n) ||
+          (/(travail|étud|cours|epfl)/.test(userText) && /epfl|travail|étud/.test(n)) ||
+          (/(sport|fitness|salle)/.test(userText) && /sport|bouger|fitness|salle/.test(n))
+        );
+      });
+      if (q && !actions.some(a => a.task_id === q.id && (a.type === "move_task" || a.type === "change_task"))) {
+        actions.push({type:"move_task",task_id:q.id,time:explicitTime,name:"",desc:"",xp:0,cat:"",stat:"",mode:""});
+      }
+    }
 
     // Recover a concrete move if Gemini described it but omitted the action.
     const replyForAction = typeof parsed.reply === "string" ? parsed.reply : "";
