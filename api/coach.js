@@ -14,7 +14,6 @@ const actionSchema = {
       mode: { type: "string" }
     },
     required: ["type","task_id","time","name","desc","xp","cat","stat","mode"],
-    additionalProperties: false
   }
 };
 
@@ -24,8 +23,7 @@ const responseSchema = {
     reply: { type: "string" },
     actions: actionSchema
   },
-  required: ["reply","actions"],
-  additionalProperties: false
+  required: ["reply","actions"]
 };
 
 export default async function handler(req, res) {
