@@ -12,14 +12,11 @@ targets:
     platform: iOS
     sources:
       - path: MYSystemApp
+    info:
+      path: MYSystemApp/Info.plist
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mysystem.app
-        INFOPLIST_KEY_CFBundleDisplayName: MY SYSTEM
-        INFOPLIST_KEY_LSApplicationQueriesSchemes: mysystem
-        INFOPLIST_KEY_CFBundleURLTypes:
-          - CFBundleURLSchemes:
-              - mysystem
     entitlements:
       path: MYSystemApp/MYSystem.entitlements
   MYSystemWidget:
@@ -27,11 +24,11 @@ targets:
     platform: iOS
     sources:
       - path: MYSystemWidget
+    info:
+      path: MYSystemWidget/Info.plist
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mysystem.app.widget
-        INFOPLIST_KEY_CFBundleDisplayName: MY SYSTEM
-        INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier: com.apple.widgetkit-extension
     entitlements:
       path: MYSystemWidget/MYSystemWidget.entitlements
     dependencies:
