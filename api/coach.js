@@ -211,7 +211,24 @@ ${JSON.stringify(tasks)}`;
     const replyForAction = typeof parsed.reply === "string" ? parsed.reply : "";
     if (!actions.length && replyForAction) {
       for (const t of taskList) {
-        const escaped = String(t.name).replace(/[.*+?^$()|[\]\\]/g, "\\    // Never expose Gemini's raw JSON to the UI, even if the model nested it in reply.
+        const escaped = String(t.name).replace(/[.*+?^$()|[\\]\\\\]/g, "\\\\$&");
+        const re = new RegExp(
+          escaped + "[^\\n]{0,100}?(?:passe|va|déplac|décal|repouss|avance)[^\\n]{0,40}?(\\\\d{1,2}):([0-5]\\\\d)",
+          "i"
+        );
+        const m = replyForAction.match(re);
+        if (m) {
+          actions.push({
+            type:"move_task",
+            task_id:t.id,
+            time:String(m[1]).padStart(2,"0")+":"+m[2],
+            name:"",desc:"",xp:0,cat:"",stat:"",mode:""
+          });
+          break;
+        }
+      }
+    }
+    // Never expose Gemini's raw JSON to the UI, even if the model nested it in reply.
     let reply = typeof parsed.reply === "string" ? parsed.reply : "Je t'écoute.";");
         const re = new RegExp(escaped + "[^\\n]{0,100}?(?:passe|va|déplac|décal|repouss|avance)[^\\n]{0,40}?(\\d{1,2}):([0-5]\\d)", "i");
         const m = replyForAction.match(re);
