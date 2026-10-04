@@ -207,45 +207,30 @@ ${JSON.stringify(tasks)}`;
       return false;
     });
 
-    // Recover a concrete move if Gemini described it in reply but omitted the action.
+    // Recover a concrete move if Gemini described it but omitted the action.
     const replyForAction = typeof parsed.reply === "string" ? parsed.reply : "";
     if (!actions.length && replyForAction) {
       for (const t of taskList) {
-        const escaped = String(t.name).replace(/[.*+?^$()|[\\]\\\\]/g, "\\\\$&");
-        const re = new RegExp(
-          escaped + "[^\\n]{0,100}?(?:passe|va|déplac|décal|repouss|avance)[^\\n]{0,40}?(\\\\d{1,2}):([0-5]\\\\d)",
-          "i"
-        );
-        const m = replyForAction.match(re);
+        const name = String(t.name || "");
+        if (!name) continue;
+        const pos = replyForAction.toLowerCase().indexOf(name.toLowerCase());
+        if (pos < 0) continue;
+        const nearby = replyForAction.slice(pos, pos + 180);
+        const m = nearby.match(/(?:passe|va|déplac|décal|repouss|avance)[^\n]{0,60}?(\d{1,2}):([0-5]\d)/i);
         if (m) {
-          actions.push({
-            type:"move_task",
-            task_id:t.id,
-            time:String(m[1]).padStart(2,"0")+":"+m[2],
-            name:"",desc:"",xp:0,cat:"",stat:"",mode:""
-          });
+          actions.push({ type:"move_task", task_id:t.id, time:String(m[1]).padStart(2,"0")+":"+m[2], name:"", desc:"", xp:0, cat:"", stat:"", mode:"" });
           break;
         }
       }
     }
-    // Never expose Gemini's raw JSON to the UI, even if the model nested it in reply.
-    let reply = typeof parsed.reply === "string" ? parsed.reply : "Je t'écoute.";");
-        const re = new RegExp(escaped + "[^\\n]{0,100}?(?:passe|va|déplac|décal|repouss|avance)[^\\n]{0,40}?(\\d{1,2}):([0-5]\\d)", "i");
-        const m = replyForAction.match(re);
-        if (m) {
-          actions.push({type:"move_task",task_id:t.id,time:String(m[1]).padStart(2,"0")+":"+m[2],name:"",desc:"",xp:0,cat:"",stat:"",mode:""});
-          break;
-        }
-      }
-    }
-    // Never expose Gemini's raw JSON to the UI, even if the model nested it in reply.
-    let reply = typeof parsed.reply === "string" ? parsed.reply : "Je t'écoute.";
+
+    // Never expose Gemini's raw JSON to the UI.
+    let reply = typeof parsed.reply === "string" ? parsed.reply : "Je t'écoute."; 
     const nested = reply.trim().match(/^\s*\{\s*"reply"\s*:\s*"((?:\\.|[^"\\])*)"/s);
     if (nested) {
       try { reply = JSON.parse("\"" + nested[1] + "\""); } catch {}
     }
-    reply = reply.replace(/^\s*\`\`\`(?:json)?\s*/i, "").replace(/\s*\`\`\`\s*$/i, "").trim();
-
+    reply = reply.replace(/^\s*```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
     return res.status(200).json({
       reply,
       actions,
