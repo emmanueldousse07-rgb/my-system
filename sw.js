@@ -1,1 +1,6 @@
-const CACHE="my-system-2026-10-04";const ASSETS=["./","./index.html","./styles.css","./app.js","./manifest.webmanifest","./icons/icon.svg"];self.addEventListener("install",e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));self.addEventListener("activate",e=>e.waitUntil(self.clients.claim()));self.addEventListener("fetch",e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));
+const CACHE="my-system-shell-2026-10-04-02";
+const ASSETS=["./","./index.html","./styles.css","./app.js","./manifest.webmanifest","./icons/icon.svg"];
+self.addEventListener("install",event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)))});
+self.addEventListener("message",event=>{if(event.data?.type==="SKIP_WAITING")self.skipWaiting()});
+self.addEventListener("activate",event=>{event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith("my-system-shell-")&&k!==CACHE).map(k=>caches.delete(k)));await self.clients.claim()})())});
+self.addEventListener("fetch",event=>{if(event.request.method!=="GET")return;const url=new URL(event.request.url);if(url.pathname.includes("/api/"))return;event.respondWith((async()=>{const cached=await caches.match(event.request);try{const fresh=await fetch(event.request);if(fresh.ok){const cache=await caches.open(CACHE);cache.put(event.request,fresh.clone())}return fresh}catch(e){return cached||Response.error()}})())});
