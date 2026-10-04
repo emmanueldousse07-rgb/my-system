@@ -137,8 +137,8 @@ async function send(){
     document.getElementById("coachState").textContent="GPT-6 Luna · connecté · "+(ms<2500?"rapide":"analyse");
     renderAll();
   }catch(e){
-    placeholder.textContent=localCoach(m);
-    document.getElementById("coachState").textContent="Mode local · IA indisponible";
+    placeholder.textContent="⚠️ Le Coach IA n’a pas répondu. "+(e.message||"Erreur inconnue");
+    document.getElementById("coachState").textContent="IA indisponible · erreur détectée";
   }finally{
     window.__coachBusy=false;
     input.disabled=false;
