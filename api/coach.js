@@ -127,6 +127,6 @@ ${JSON.stringify(tasks)}`;
     });
   } catch (error) {
     console.error("MY SYSTEM Coach:", error);
-    return res.status(500).json({ error: "Coach unavailable" });
+    return res.status(500).json({ error: error?.message || "Coach unavailable" });
   }
 }
