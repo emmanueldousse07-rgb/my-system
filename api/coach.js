@@ -175,8 +175,16 @@ ${JSON.stringify(tasks)}`;
       }
     }
 
+    // Never expose Gemini's raw JSON to the UI, even if the model nested it in reply.
+    let reply = typeof parsed.reply === "string" ? parsed.reply : "Je t'écoute.";
+    const nested = reply.trim().match(/^\s*\{\s*"reply"\s*:\s*"((?:\\.|[^"\\])*)"/s);
+    if (nested) {
+      try { reply = JSON.parse("\"" + nested[1] + "\""); } catch {}
+    }
+    reply = reply.replace(/^\s*\`\`\`(?:json)?\s*/i, "").replace(/\s*\`\`\`\s*$/i, "").trim();
+
     return res.status(200).json({
-      reply: typeof parsed.reply === "string" ? parsed.reply : "Je t'écoute.",
+      reply,
       actions: Array.isArray(parsed.actions) ? parsed.actions : [],
       response_id: null
     });
