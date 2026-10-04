@@ -110,7 +110,7 @@ ${JSON.stringify(tasks)}`;
       }
     };
 
-    const models = [model, "gemini-3.7-flash"].filter((value, index, arr) => value && arr.indexOf(value) === index);
+    const models = [model, "gemini-3.7-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite"].filter((value, index, arr) => value && arr.indexOf(value) === index);
     let response;
     let data;
     let lastError = "";
