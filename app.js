@@ -205,8 +205,10 @@ async function send(){
     document.getElementById("coachState").textContent="Gemini Coach · connecté · "+(ms<2500?"rapide":"analyse");
     renderAll();
   }catch(e){
-    placeholder.textContent="⚠️ Le Coach IA n’a pas répondu. "+(e.message||"Erreur inconnue");
-    document.getElementById("coachState").textContent="IA indisponible · erreur détectée";
+    const fallback=typeof window.localCoach==="function"?window.localCoach(m):"La connexion IA est indisponible, mais le système local reste actif.";
+    placeholder.textContent="⚡ "+fallback;
+    document.getElementById("coachState").textContent="Mode secours · contrôle local";
+    try{adaptiveDay();save();renderAll()}catch{}
   }finally{
     window.__coachBusy=false;
     input.disabled=false;
