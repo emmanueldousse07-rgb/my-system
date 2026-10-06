@@ -150,6 +150,19 @@
   }
   window.acceptImprovement=accept;window.dismissImprovement=dismiss;window.improvementWhy=why;
   window.MY_SYSTEM_IMPROVEMENT_ENGINE={refresh:()=>{ensureOpportunities();render();save()}};
+  const oldCoachApply=window.applyCoachActions;
+  if(typeof oldCoachApply==="function"){
+    window.applyCoachActions=function(actions){
+      const enriched=(actions||[]).map(a=>{
+        if(a&&a.type==="add_task"&&a.reason){
+          const base=a.desc||"";
+          return {...a,desc:base+(base?" ":"")+a.reason};
+        }
+        return a;
+      });
+      return oldCoachApply(enriched);
+    };
+  }
   // Make proactive improvement visible without taking over the user's planning.
   document.addEventListener("DOMContentLoaded",init);
   setTimeout(init,50);
