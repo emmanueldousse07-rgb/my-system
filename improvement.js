@@ -37,6 +37,21 @@
       ["Créer quelque chose sans objectif","20 min","curiosity","Créer sans chercher la performance entretient l’exploration et l’initiative.","create"]
     ]
   };
+  const style=document.createElement("style");
+  style.textContent=`
+    .improvement-section{margin:22px 0;padding:18px;border:1px solid rgba(155,140,255,.22);border-radius:24px;background:linear-gradient(145deg,rgba(20,25,44,.9),rgba(8,12,23,.94));box-shadow:0 20px 60px rgba(0,0,0,.25);position:relative;overflow:hidden}
+    .improvement-section:before{content:"";position:absolute;inset:-40%;background:radial-gradient(circle at 15% 20%,rgba(155,140,255,.12),transparent 35%);pointer-events:none}
+    .improvement-section>*{position:relative}
+    .improvement-count{font-size:8px;letter-spacing:1px;color:var(--purple);font-weight:900}
+    .improvement-card{padding:16px;margin:10px 0;border:1px solid rgba(255,255,255,.08);border-radius:19px;background:rgba(8,12,23,.72)}
+    .improvement-top{display:flex;gap:11px;align-items:center}.improvement-icon{width:34px;height:34px;border-radius:12px;display:grid;place-items:center;background:rgba(155,140,255,.12);color:var(--purple);font-size:16px;box-shadow:0 0 22px rgba(155,140,255,.12)}
+    .improvement-top h3{margin:4px 0 0;font-size:15px}.improvement-card p{font-size:10px;line-height:1.55;color:var(--muted);margin:12px 0}
+    .improvement-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.improvement-foot>span{font-size:8px;color:#aeb7ce}
+    .improvement-foot>div{display:flex;gap:6px;flex-wrap:wrap}.improvement-foot button{padding:8px 10px;font-size:8px;border-radius:10px}
+    .improvement-empty{padding:16px;border:1px dashed rgba(255,255,255,.1);border-radius:16px;color:var(--muted);font-size:10px;line-height:1.5}
+    .improve-modal h3{font-size:24px;margin:9px 0}.improve-modal p{color:var(--muted);line-height:1.6;font-size:11px}.improve-meta{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.improve-meta>*{padding:8px 10px;border:1px solid var(--line);border-radius:10px;font-size:8px}
+  `;
+  document.head.appendChild(style);
   function init(){
     state.improvementLog=Array.isArray(state.improvementLog)?state.improvementLog:[];
     state.opportunities=Array.isArray(state.opportunities)?state.opportunities:[];
