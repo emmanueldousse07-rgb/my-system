@@ -11,7 +11,8 @@ const actionSchema = {
       xp: { type: "number" },
       cat: { type: "string" },
       stat: { type: "string" },
-      mode: { type: "string" }
+      mode: { type: "string" },
+      reason: { type: "string" }
     },
     required: ["type"],
   }
@@ -224,7 +225,8 @@ ${JSON.stringify(tasks)}`;
       xp: Number.isFinite(Number(a?.xp)) ? Number(a.xp) : 0,
       cat: typeof a?.cat === "string" ? a.cat : "",
       stat: typeof a?.stat === "string" ? a.stat : "",
-      mode: typeof a?.mode === "string" ? a.mode : ""
+      mode: typeof a?.mode === "string" ? a.mode : "",
+      reason: typeof a?.reason === "string" ? a.reason : ""
     })).filter(a => {
       if (a.type === "move_task" || a.type === "change_task" || a.type === "remove_task") return validIds.has(a.task_id);
       if (a.type === "add_task") return !!a.name;
