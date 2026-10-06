@@ -262,3 +262,5 @@ const oldActions=applyCoachActions;window.applyCoachActions=function(actions){re
 const css=document.createElement("style");css.textContent='.day-brief{position:relative;overflow:hidden}.day-brief:after{content:"ADAPTIVE CORE";position:absolute;right:12px;bottom:5px;font-size:6px;letter-spacing:1.6px;color:#ffffff22}.nutrition-guide{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}.nutrition-guide p{font-size:9px;line-height:1.55;color:var(--muted);margin:6px 0}.avatar-figure.evolved .avatar-core{box-shadow:0 0 38px #61eaff66}.avatar-figure.awakened .avatar-body{box-shadow:inset 0 0 30px #a26dff22,0 0 35px #7b63ff18}';document.head.appendChild(css);
 try{checkAchievements();save();renderAll()}catch(e){console.error("MY SYSTEM core",e)}
 })();
+/* Load proactive improvement engine when available. */
+const improvementScript=document.createElement("script"); improvementScript.src="improvement.js"; document.head.appendChild(improvementScript);
