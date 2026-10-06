@@ -1,4 +1,4 @@
-const CACHE="my-system-shell-2026-10-06-01";
+const CACHE="my-system-shell-2026-10-06-02";
 const ASSETS=["./","./index.html","./styles.css","./app.js","./manifest.webmanifest?v=2026-10-05","./icons/icon.svg?v=2026-10-06","./icons/icon-180.png"];
 self.addEventListener("install",event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)))});
 self.addEventListener("message",event=>{if(event.data?.type==="SKIP_WAITING")self.skipWaiting()});
